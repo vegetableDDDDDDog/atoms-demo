@@ -1,21 +1,31 @@
 # Atoms Demo
 
-A lightweight full-stack Atoms-inspired app generation demo. Users describe an app idea, watch a simulated AI agent team build it, preview the generated app, save versions, and publish a shareable preview.
+一个重新开始的 Atoms 网页版核心原型。
+
+当前版本只聚焦入口体验：
+
+- 左侧历史 session 列表
+- 新建对话
+- 中央输入框
+- 上传附件入口
+- Enter 或发送按钮触发 query 分析
+- 区分咨询类和实现类请求
+- 根据 query 展示分析结果或实施计划
+
+旧的业务模板生成、发布页、Prisma/SQLite 持久化已经移除，避免和新方向混在一起。
 
 ## Stack
 
 - Next.js App Router
+- React
 - TypeScript
-- Prisma + SQLite
 - Vitest
-- CSS Modules/global CSS
+- Global CSS
 
-## Local Setup
+## Run
 
 ```bash
 npm install
-copy .env.example .env
-npm run db:migrate -- --name init
 npm run dev
 ```
 
@@ -26,17 +36,3 @@ Open `http://localhost:3000`.
 ```bash
 npm test
 ```
-
-## Demo Flow
-
-1. Enter an app idea in the Build Room.
-2. Run the simulated agent build.
-3. Inspect the generated preview, mobile view, and code panel.
-4. Use Fix Bug to create an improved version.
-5. Publish the latest version and open the generated `/p/:slug` URL.
-
-## Architecture Notes
-
-The MVP uses a deterministic local generator instead of a real LLM call. The generator is isolated behind `src/features/generator/buildGeneratedApp.ts`, so a real model adapter can replace it without changing the UI or database schema.
-
-SQLite is used for local persistence. For Vercel-style serverless deployment with durable persistence, switch Prisma to a hosted Postgres provider such as Supabase or Neon.
