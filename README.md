@@ -26,3 +26,17 @@ Open `http://localhost:3000`.
 ```bash
 npm test
 ```
+
+## Demo Flow
+
+1. Enter an app idea in the Build Room.
+2. Run the simulated agent build.
+3. Inspect the generated preview, mobile view, and code panel.
+4. Use Fix Bug to create an improved version.
+5. Publish the latest version and open the generated `/p/:slug` URL.
+
+## Architecture Notes
+
+The MVP uses a deterministic local generator instead of a real LLM call. The generator is isolated behind `src/features/generator/buildGeneratedApp.ts`, so a real model adapter can replace it without changing the UI or database schema.
+
+SQLite is used for local persistence. For Vercel-style serverless deployment with durable persistence, switch Prisma to a hosted Postgres provider such as Supabase or Neon.
