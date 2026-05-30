@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { dictionary, localeStorageKey, resolveLocale, type Locale } from "@/features/i18n/dictionary";
 import { AgentPipeline } from "./AgentPipeline";
 import { CodePanel } from "./CodePanel";
+import { DemoBrief } from "./DemoBrief";
 import { PreviewFrame } from "./PreviewFrame";
 import { ProjectSidebar } from "./ProjectSidebar";
 import { PromptComposer } from "./PromptComposer";
@@ -157,6 +158,7 @@ export function BuildRoom() {
     <main className="app-shell">
       <ProjectSidebar projects={projects} copy={copy} />
       <section className="workspace">
+        <DemoBrief copy={copy} />
         <PromptComposer
           onSubmit={startBuild}
           disabled={isGenerating}
@@ -164,16 +166,22 @@ export function BuildRoom() {
           onLocaleChange={changeLocale}
           copy={copy}
         />
-        <div className="preview-tabs" aria-label={copy.previewViews}>
-          <button className="button-ghost" data-active={view === "desktop"} onClick={() => setView("desktop")}>
-            {copy.desktop}
-          </button>
-          <button className="button-ghost" data-active={view === "mobile"} onClick={() => setView("mobile")}>
-            {copy.mobile}
-          </button>
-          <button className="button-ghost" data-active={view === "code"} onClick={() => setView("code")}>
-            {copy.code}
-          </button>
+        <div className="result-header">
+          <div>
+            <p className="section-title">{copy.generatedWorkspace}</p>
+            <p>{activeVersion ? copy.generatedResultReady : copy.generatedResultEmpty}</p>
+          </div>
+          <div className="preview-tabs" aria-label={copy.previewViews}>
+            <button className="button-ghost" data-active={view === "desktop"} onClick={() => setView("desktop")}>
+              {copy.desktop}
+            </button>
+            <button className="button-ghost" data-active={view === "mobile"} onClick={() => setView("mobile")}>
+              {copy.mobile}
+            </button>
+            <button className="button-ghost" data-active={view === "code"} onClick={() => setView("code")}>
+              {copy.code}
+            </button>
+          </div>
         </div>
         {view === "code" && activeVersion ? (
           <CodePanel version={activeVersion} />
@@ -205,4 +213,3 @@ export function BuildRoom() {
     </main>
   );
 }
-

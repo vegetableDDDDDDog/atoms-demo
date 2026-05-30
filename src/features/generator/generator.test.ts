@@ -4,7 +4,7 @@ import { classifyPrompt } from "./classifyPrompt";
 
 describe("classifyPrompt", () => {
   it("classifies booking and customer prompts as crm", () => {
-    expect(classifyPrompt("Build a booking CRM for customers")).toBe("crm");
+    expect(classifyPrompt("Build a customer booking manager")).toBe("crm");
   });
 
   it("classifies portfolio and investment prompts as portfolio", () => {
@@ -16,18 +16,18 @@ describe("classifyPrompt", () => {
   });
 
   it("classifies Chinese customer booking prompts as crm", () => {
-    expect(classifyPrompt("生成一个客户预约 CRM")).toBe("crm");
+    expect(classifyPrompt("生成一个客户预约管理应用")).toBe("crm");
   });
 });
 
 describe("buildGeneratedApp", () => {
   it("returns complete iframe-ready files", () => {
     const app = buildGeneratedApp({
-      prompt: "Build a booking CRM for customers",
+      prompt: "Build a customer booking manager",
       mode: "team"
     });
 
-    expect(app.title).toContain("CRM");
+    expect(app.title).toBe("Customer Booking Manager");
     expect(app.html).toContain("<main");
     expect(app.css).toContain(":root");
     expect(app.js).toContain("addEventListener");
@@ -36,12 +36,12 @@ describe("buildGeneratedApp", () => {
 
   it("generates Chinese iframe-ready copy when locale is zh", () => {
     const app = buildGeneratedApp({
-      prompt: "生成一个客户预约 CRM",
+      prompt: "生成一个客户预约管理应用",
       mode: "team",
       locale: "zh"
     });
 
-    expect(app.title).toContain("预约");
+    expect(app.title).toBe("客户预约管理");
     expect(app.html).toContain("新增记录");
     expect(app.html).toContain("搜索生成数据");
   });

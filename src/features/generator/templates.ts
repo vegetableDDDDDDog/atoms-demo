@@ -77,7 +77,7 @@ const uiByLocale: Record<Locale, TemplateUiCopy> = {
     paused: "Paused",
     newItem: "New generated item",
     newTag: "New",
-    qualityGenerated: "Generated from prompt.",
+    qualityGenerated: "Generated from the app request.",
     qualityFixed: "QA repair pass applied with clearer empty states and stronger mobile spacing.",
     searchLabel: "Search generated data",
     statusLabel: "Status"
@@ -89,7 +89,7 @@ const uiByLocale: Record<Locale, TemplateUiCopy> = {
     paused: "已暂停",
     newItem: "新生成记录",
     newTag: "新增",
-    qualityGenerated: "根据需求生成。",
+    qualityGenerated: "根据应用需求生成。",
     qualityFixed: "QA 修复版：优化空状态和移动端间距。",
     searchLabel: "搜索生成数据",
     statusLabel: "状态"
@@ -99,7 +99,7 @@ const uiByLocale: Record<Locale, TemplateUiCopy> = {
 const contentByLocale: Record<Locale, Record<AppType, TemplateContent>> = {
   en: {
     crm: {
-      title: "Booking CRM",
+      title: "Customer Booking Manager",
       description: "Manage customer bookings, revenue, and follow-ups from one generated workspace.",
       metrics: ["12 bookings", "$8.4k revenue", "4 follow-ups"],
       rows: ["Ada Chen - Product consultation", "Northwind Studio - Renewal call", "Kai Liu - Onboarding"]
@@ -125,7 +125,7 @@ const contentByLocale: Record<Locale, Record<AppType, TemplateContent>> = {
   },
   zh: {
     crm: {
-      title: "预约 CRM",
+      title: "客户预约管理",
       description: "在一个生成工作台里管理客户预约、收入和跟进事项。",
       metrics: ["12 个预约", "¥8.4k 收入", "4 个待跟进"],
       rows: ["Ada Chen - 产品咨询", "Northwind Studio - 续约沟通", "Kai Liu - 入门引导"]
@@ -185,3 +185,4 @@ export function createTemplate({ prompt, appType, locale = "en", fixRequested }:
 </main>`
   };
 }
+
