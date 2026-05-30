@@ -1,13 +1,17 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { generateApp } from "@/features/generation/generateApp";
+import type { GeneratedApp } from "@/features/generation/types";
 import { analyzeUserQuery, type QueryAnalysis } from "@/features/query/analyzeUserQuery";
+import { GenerationWorkspace } from "./GenerationWorkspace";
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   text: string;
   analysis?: QueryAnalysis;
+  app?: GeneratedApp;
 };
 
 type Session = {
@@ -53,6 +57,7 @@ export function BuildRoom() {
     [activeSessionId, sessions]
   );
   const latestAnalysis = activeSession?.messages.findLast((message) => message.analysis)?.analysis ?? null;
+  const latestApp = activeSession?.messages.findLast((message) => message.app)?.app ?? null;
 
   useEffect(() => {
     const stored = window.localStorage.getItem(storageKey);
@@ -83,12 +88,14 @@ export function BuildRoom() {
     if (!prompt) return;
 
     const analysis = analyzeUserQuery(prompt, attachments);
+    const app = analysis.intent === "build" ? generateApp({ prompt, analysis }) : undefined;
     const userMessage: Message = { id: createId("m"), role: "user", text: prompt };
     const assistantMessage: Message = {
       id: createId("m"),
       role: "assistant",
       text: buildAssistantText(analysis),
-      analysis
+      analysis,
+      app
     };
 
     if (activeSession) {
@@ -225,17 +232,7 @@ export function BuildRoom() {
           </form>
         </section>
 
-        {latestAnalysis?.intent === "build" ? (
-          <aside className="build-status">
-            <p>构建状态</p>
-            <strong>已生成实施计划</strong>
-            <ul>
-              {latestAnalysis.sections
-                .find((section) => section.title === "预期文件")
-                ?.items.map((item) => <li key={item}>{item}</li>)}
-            </ul>
-          </aside>
-        ) : null}
+        {latestAnalysis?.intent === "build" && latestApp ? <GenerationWorkspace app={latestApp} /> : null}
       </section>
     </main>
   );
