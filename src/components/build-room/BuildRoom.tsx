@@ -5,9 +5,6 @@ import { dictionary, localeStorageKey, resolveLocale, type Locale } from "@/feat
 import { decorateProgressSteps, getProgressPercent, type ProgressState } from "@/features/progress/generationProgress";
 import { AgentPipeline } from "./AgentPipeline";
 import { CodePanel } from "./CodePanel";
-import { DemoBrief } from "./DemoBrief";
-import { DeployPanel } from "./DeployPanel";
-import { DiffPanel } from "./DiffPanel";
 import { PreviewFrame } from "./PreviewFrame";
 import { ProjectSidebar } from "./ProjectSidebar";
 import { PromptComposer } from "./PromptComposer";
@@ -70,7 +67,6 @@ export function BuildRoom() {
   const [activeProgressIndex, setActiveProgressIndex] = useState<number | null>(null);
   const [progressState, setProgressState] = useState<ProgressState>("running");
   const [publishUrl, setPublishUrl] = useState<string | null>(null);
-  const [lastPrompt, setLastPrompt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
 
@@ -93,7 +89,7 @@ export function BuildRoom() {
       : activeVersion
         ? copy.generatedResultReady
         : copy.generatedResultEmpty;
-  const latestRequest = activeRun?.inputPrompt ?? lastPrompt;
+  const visibleWorkspaceTabs = copy.workspaceTabs.filter((tab) => tab.id === "preview" || tab.id === "code");
 
   async function refreshProjects() {
     const response = await fetch("/api/projects");
@@ -147,7 +143,6 @@ export function BuildRoom() {
     const startedAt = Date.now();
     setIsGenerating(true);
     setView("preview");
-    setLastPrompt(prompt);
     beginProgress();
     setActiveRun(null);
     setPublishUrl(null);
@@ -161,7 +156,7 @@ export function BuildRoom() {
         body: JSON.stringify({ prompt, mode: "team", locale })
       });
 
-      if (!response.ok) {
+          if (!response.ok) {
         throw new Error("Build failed");
       }
 
@@ -253,12 +248,6 @@ export function BuildRoom() {
           <span>{copy.workspaceSubtitle}</span>
         </div>
         <div className="topbar-meta">
-          <span>
-            {copy.currentProject}: {activeRun?.project.name ?? copy.noBuilds}
-          </span>
-          <span>
-            {copy.workspaceMode}: {copy.teamMode}
-          </span>
           <span className="status-pill">{isGenerating ? copy.running : copy.ready}</span>
           <div className="language-toggle" aria-label={copy.languageLabel}>
             <button type="button" aria-pressed={locale === "zh"} data-active={locale === "zh"} onClick={() => changeLocale("zh")}>
@@ -273,47 +262,13 @@ export function BuildRoom() {
       <div className="workspace-grid">
         <ProjectSidebar projects={projects} activeVersion={activeVersion} copy={copy} />
         <section className="conversation-panel">
-          <DemoBrief copy={copy} />
           <PromptComposer onSubmit={startBuild} disabled={isGenerating} copy={copy} />
-          <section className="card conversation-card latest-request">
-            <div>
-              <p className="section-title">{copy.conversationTitle}</p>
-              <p>{copy.conversationSubtitle}</p>
-            </div>
-            {latestRequest ? (
-              <article className="request-bubble">
-                <span>{copy.userRequestLabel}</span>
-                <p>{latestRequest}</p>
-              </article>
-            ) : null}
-          </section>
           <AgentPipeline
             steps={activeRun?.steps ?? []}
             progressSteps={progressSteps}
             isGenerating={isGenerating}
             copy={copy}
           />
-          <section className="card conversation-card next-actions">
-            <div>
-              <p className="section-title">{copy.nextActionsLabel}</p>
-              <div className="suggestion-row">
-                {copy.followUpSuggestions.map((suggestion) => (
-                  <button
-                    type="button"
-                    className="button-ghost"
-                    key={suggestion}
-                    disabled={isGenerating}
-                    onClick={() => startBuild(`${latestRequest ?? copy.defaultPrompt}\n${suggestion}`)}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button className="button-ghost" onClick={fixCurrentRun} disabled={!activeRun || isGenerating}>
-              {copy.fixBug}
-            </button>
-          </section>
           {error ? (
             <p className="publish-note" style={{ color: "var(--warning)" }}>
               {error}
@@ -323,10 +278,10 @@ export function BuildRoom() {
         <section className="output-panel" ref={resultRef}>
           <div>
             <p className="section-title">{copy.rightWorkspaceTitle}</p>
-            <p>{resultDescription}</p>
+            <p>{activeVersion?.title ?? resultDescription}</p>
           </div>
           <div className="workspace-tabs" aria-label={copy.previewViews}>
-            {copy.workspaceTabs.map((tab) => (
+            {visibleWorkspaceTabs.map((tab) => (
               <button
                 className="button-ghost"
                 data-active={view === tab.id}
@@ -347,15 +302,6 @@ export function BuildRoom() {
                   <p>{copy.generatedResultEmpty}</p>
                 </section>
               )
-            ) : null}
-            {view === "diff" ? <DiffPanel version={activeVersion} copy={copy} /> : null}
-            {view === "deploy" ? (
-              <DeployPanel
-                canPublish={Boolean(activeVersion)}
-                publishUrl={publishUrl}
-                onPublish={publishCurrentVersion}
-                copy={copy}
-              />
             ) : null}
             {view === "preview" || view === "mobile" ? (
               <PreviewFrame

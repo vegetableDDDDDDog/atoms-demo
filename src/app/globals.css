@@ -97,7 +97,7 @@ button:disabled {
 .workspace-grid {
   min-height: 0;
   display: grid;
-  grid-template-columns: 240px minmax(420px, 1fr) minmax(420px, .95fr);
+  grid-template-columns: 220px minmax(400px, .86fr) minmax(520px, 1.14fr);
 }
 
 .panel {
@@ -487,6 +487,7 @@ button:disabled {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+  white-space: pre-line;
 }
 
 .step-status {
@@ -719,7 +720,7 @@ button:disabled {
 
 @media (max-width: 1280px) {
   .workspace-grid {
-    grid-template-columns: 220px minmax(380px, 1fr) minmax(380px, .9fr);
+    grid-template-columns: 200px minmax(360px, .9fr) minmax(460px, 1.1fr);
   }
 
   .flow-steps {
