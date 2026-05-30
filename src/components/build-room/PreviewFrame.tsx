@@ -1,11 +1,15 @@
+import type { BuildRoomCopy } from "@/features/i18n/dictionary";
+
 export function PreviewFrame({
   document,
   mode,
-  empty
+  empty,
+  copy
 }: {
   document: string;
   mode: "desktop" | "mobile" | "code";
   empty: boolean;
+  copy: BuildRoomCopy;
 }) {
   const width = mode === "mobile" ? 390 : "100%";
 
@@ -13,8 +17,8 @@ export function PreviewFrame({
     return (
       <section className="card empty-preview">
         <div>
-          <strong>Preview standby</strong>
-          <p>Run Team Mode to render the generated app here.</p>
+          <strong>{copy.previewStandbyTitle}</strong>
+          <p>{copy.previewStandbyBody}</p>
         </div>
       </section>
     );
@@ -23,7 +27,7 @@ export function PreviewFrame({
   return (
     <section className="card preview-shell">
       <iframe
-        title="Generated app preview"
+        title={copy.previewTitle}
         sandbox="allow-scripts"
         srcDoc={document}
         className="preview-frame"
@@ -32,3 +36,4 @@ export function PreviewFrame({
     </section>
   );
 }
+

@@ -1,6 +1,6 @@
 import { createAgentPlan } from "@/features/agents/orchestrator";
 import { buildGeneratedApp } from "@/features/generator/buildGeneratedApp";
-import type { BuildMode } from "@/features/generator/types";
+import type { BuildMode, Locale } from "@/features/generator/types";
 import { getDemoUser } from "@/lib/demo-user";
 import { prisma } from "@/lib/prisma";
 
@@ -8,6 +8,7 @@ type CreateRunInput = {
   prompt: string;
   projectId?: string;
   mode?: BuildMode;
+  locale?: Locale;
   previousVersionId?: string;
   fixRequested?: boolean;
 };
@@ -20,6 +21,7 @@ function projectNameFromPrompt(prompt: string) {
 export async function createGenerationRun(input: CreateRunInput) {
   const user = await getDemoUser();
   const mode = input.mode ?? "team";
+  const locale = input.locale ?? "en";
   const prompt = input.prompt.trim();
 
   if (!prompt) {
@@ -50,7 +52,7 @@ export async function createGenerationRun(input: CreateRunInput) {
     }
   });
 
-  const agentSteps = createAgentPlan(prompt, input.fixRequested);
+  const agentSteps = createAgentPlan(prompt, input.fixRequested, locale);
   await prisma.agentStep.createMany({
     data: agentSteps.map((step) => ({
       runId: run.id,
@@ -65,6 +67,7 @@ export async function createGenerationRun(input: CreateRunInput) {
   const generated = buildGeneratedApp({
     prompt,
     mode,
+    locale,
     previousVersionId: input.previousVersionId,
     fixRequested: input.fixRequested
   });

@@ -29,6 +29,18 @@ describe("generation and publish services", () => {
     expect(run?.project.status).toBe("ready");
   });
 
+  it("creates localized Chinese steps and versions when locale is zh", async () => {
+    const run = await createGenerationRun({
+      prompt: "生成一个客户预约 CRM",
+      mode: "team",
+      locale: "zh"
+    });
+
+    expect(run?.steps[0]?.title).toBe("协调构建");
+    expect(run?.versions[0]?.title).toBe("预约 CRM");
+    expect(run?.versions[0]?.html).toContain("新增记录");
+  });
+
   it("publishes the generated version with a stable slug", async () => {
     const run = await createGenerationRun({
       prompt: "Build a booking CRM for customers",

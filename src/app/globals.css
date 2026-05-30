@@ -154,6 +154,38 @@ button:disabled {
   margin-bottom: 12px;
 }
 
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.language-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(76px, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #edf2f7;
+  padding: 3px;
+}
+
+.language-toggle button {
+  min-height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.language-toggle button[data-active="true"] {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, .08);
+}
+
 .composer h2 {
   margin: 0 0 6px;
   font-size: 24px;
@@ -291,5 +323,13 @@ button:disabled {
 
   .prompt-grid {
     grid-template-columns: 1fr;
+  }
+
+  .composer-header {
+    flex-direction: column;
+  }
+
+  .composer-actions {
+    justify-content: flex-start;
   }
 }

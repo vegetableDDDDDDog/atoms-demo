@@ -1,3 +1,5 @@
+import type { BuildRoomCopy } from "@/features/i18n/dictionary";
+
 type Step = {
   id: string;
   agent: string;
@@ -7,16 +9,22 @@ type Step = {
   order: number;
 };
 
-export function AgentPipeline({ steps, isGenerating }: { steps: Step[]; isGenerating: boolean }) {
+export function AgentPipeline({
+  steps,
+  isGenerating,
+  copy
+}: {
+  steps: Step[];
+  isGenerating: boolean;
+  copy: BuildRoomCopy;
+}) {
   return (
     <section>
-      <p className="section-title">Agent Pipeline</p>
+      <p className="section-title">{copy.agentPipeline}</p>
       <div className="pipeline">
-        {isGenerating ? <div className="card agent-step">Agents are building...</div> : null}
+        {isGenerating ? <div className="card agent-step">{copy.agentsBuilding}</div> : null}
         {steps.length === 0 ? (
-          <p style={{ color: "var(--muted)", margin: 0 }}>
-            Mike, Emma, Bob, Alex, and QA are waiting for the next run.
-          </p>
+          <p style={{ color: "var(--muted)", margin: 0 }}>{copy.agentEmpty}</p>
         ) : null}
         {steps.map((step) => (
           <article key={step.id} className="card agent-step">
@@ -30,3 +38,4 @@ export function AgentPipeline({ steps, isGenerating }: { steps: Step[]; isGenera
     </section>
   );
 }
+

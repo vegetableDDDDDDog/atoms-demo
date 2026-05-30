@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { dictionary, localeStorageKey, resolveLocale, type Locale } from "@/features/i18n/dictionary";
 import { AgentPipeline } from "./AgentPipeline";
 import { CodePanel } from "./CodePanel";
 import { PreviewFrame } from "./PreviewFrame";
@@ -48,11 +49,13 @@ export function BuildRoom() {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [activeRun, setActiveRun] = useState<Run | null>(null);
   const [view, setView] = useState<"desktop" | "mobile" | "code">("desktop");
+  const [locale, setLocale] = useState<Locale>("en");
   const [isGenerating, setIsGenerating] = useState(false);
   const [publishUrl, setPublishUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const activeVersion = activeRun?.versions[0] ?? null;
+  const copy = dictionary[locale];
 
   async function refreshProjects() {
     const response = await fetch("/api/projects");
@@ -61,8 +64,14 @@ export function BuildRoom() {
   }
 
   useEffect(() => {
-    refreshProjects().catch(() => setError("Could not load projects."));
+    setLocale(resolveLocale(window.localStorage.getItem(localeStorageKey)));
+    refreshProjects().catch(() => setError(dictionary.en.errors.loadProjects));
   }, []);
+
+  function changeLocale(nextLocale: Locale) {
+    setLocale(nextLocale);
+    window.localStorage.setItem(localeStorageKey, nextLocale);
+  }
 
   async function startBuild(prompt: string) {
     setIsGenerating(true);
@@ -73,7 +82,7 @@ export function BuildRoom() {
       const response = await fetch("/api/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, mode: "team" })
+        body: JSON.stringify({ prompt, mode: "team", locale })
       });
 
       if (!response.ok) {
@@ -84,7 +93,7 @@ export function BuildRoom() {
       setActiveRun(data.run);
       await refreshProjects();
     } catch {
-      setError("The agent team could not finish this run.");
+      setError(copy.errors.build);
     } finally {
       setIsGenerating(false);
     }
@@ -96,15 +105,21 @@ export function BuildRoom() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/runs/${activeRun.id}/fix`, { method: "POST" });
+      const response = await fetch(`/api/runs/${activeRun.id}/fix`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale })
+      });
+
       if (!response.ok) {
         throw new Error("Fix failed");
       }
+
       const data = (await response.json()) as { run: Run };
       setActiveRun(data.run);
       await refreshProjects();
     } catch {
-      setError("QA could not create a fix run.");
+      setError(copy.errors.fix);
     } finally {
       setIsGenerating(false);
     }
@@ -129,7 +144,7 @@ export function BuildRoom() {
       setPublishUrl(data.url);
       await refreshProjects();
     } catch {
-      setError("Publish failed for this version.");
+      setError(copy.errors.publish);
     }
   }
 
@@ -140,39 +155,54 @@ export function BuildRoom() {
 
   return (
     <main className="app-shell">
-      <ProjectSidebar projects={projects} />
+      <ProjectSidebar projects={projects} copy={copy} />
       <section className="workspace">
-        <PromptComposer onSubmit={startBuild} disabled={isGenerating} />
-        <div className="preview-tabs" aria-label="Preview views">
+        <PromptComposer
+          onSubmit={startBuild}
+          disabled={isGenerating}
+          locale={locale}
+          onLocaleChange={changeLocale}
+          copy={copy}
+        />
+        <div className="preview-tabs" aria-label={copy.previewViews}>
           <button className="button-ghost" data-active={view === "desktop"} onClick={() => setView("desktop")}>
-            Desktop
+            {copy.desktop}
           </button>
           <button className="button-ghost" data-active={view === "mobile"} onClick={() => setView("mobile")}>
-            Mobile
+            {copy.mobile}
           </button>
           <button className="button-ghost" data-active={view === "code"} onClick={() => setView("code")}>
-            Code
+            {copy.code}
           </button>
         </div>
         {view === "code" && activeVersion ? (
           <CodePanel version={activeVersion} />
         ) : (
-          <PreviewFrame document={generatedDocument} mode={view} empty={!activeVersion} />
+          <PreviewFrame document={generatedDocument} mode={view} empty={!activeVersion} copy={copy} />
         )}
       </section>
       <aside className="panel right-panel side-panel">
-        <AgentPipeline steps={activeRun?.steps ?? []} isGenerating={isGenerating} />
+        <AgentPipeline steps={activeRun?.steps ?? []} isGenerating={isGenerating} copy={copy} />
         <div className="action-row">
           <button className="button-ghost" onClick={fixCurrentRun} disabled={!activeRun || isGenerating}>
-            Fix Bug
+            {copy.fixBug}
           </button>
           <button className="button-primary" onClick={publishCurrentVersion} disabled={!activeVersion}>
-            Publish
+            {copy.publish}
           </button>
         </div>
-        {publishUrl ? <p className="publish-note">Published at {publishUrl}</p> : null}
-        {error ? <p className="publish-note" style={{ color: "var(--warning)" }}>{error}</p> : null}
+        {publishUrl ? (
+          <p className="publish-note">
+            {copy.publishedAt} {publishUrl}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="publish-note" style={{ color: "var(--warning)" }}>
+            {error}
+          </p>
+        ) : null}
       </aside>
     </main>
   );
 }
+
