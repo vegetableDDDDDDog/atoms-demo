@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analyzeUserQuery } from "@/features/query/analyzeUserQuery";
-import { generateApp } from "./generateApp";
+import { generateApp, repairGeneratedApp, verifyGeneratedApp } from "./generateApp";
 
 describe("generateApp", () => {
   it("generates runnable files from a build query", () => {
@@ -30,5 +30,41 @@ describe("generateApp", () => {
     expect(secondApp.title).toBe("个人读书记录工具");
     expect(firstApp.modules.map((module) => module.title)).not.toEqual(secondApp.modules.map((module) => module.title));
     expect(firstApp.previewHtml).not.toBe(secondApp.previewHtml);
+  });
+
+  it("reports missing entry file and empty preview issues", () => {
+    const prompt = "帮我做一个校园社团活动报名系统，需要活动发布、学生报名";
+    const app = generateApp({ prompt, analysis: analyzeUserQuery(prompt) });
+
+    const brokenApp = {
+      ...app,
+      files: app.files.filter((file) => file.path !== "index.html"),
+      previewHtml: " "
+    };
+
+    const check = verifyGeneratedApp(brokenApp);
+
+    expect(check.ok).toBe(false);
+    expect(check.issues.map((issue) => issue.message)).toEqual(["缺少入口文件 index.html", "预览内容为空"]);
+  });
+
+  it("repairs missing files and preview content", () => {
+    const prompt = "帮我做一个个人读书记录工具，需要书籍录入、阅读进度";
+    const app = generateApp({ prompt, analysis: analyzeUserQuery(prompt) });
+    const brokenApp = {
+      ...app,
+      files: app.files.filter((file) => file.path === "styles.css"),
+      previewHtml: ""
+    };
+
+    const repaired = repairGeneratedApp(brokenApp);
+
+    expect(verifyGeneratedApp(repaired).ok).toBe(true);
+    expect(repaired.files.map((file) => file.path)).toEqual(["index.html", "styles.css", "app.js"]);
+    expect(repaired.previewHtml).toContain("个人读书记录工具");
+    expect(repaired.logs.at(-1)).toMatchObject({
+      label: "一键修复",
+      status: "done"
+    });
   });
 });

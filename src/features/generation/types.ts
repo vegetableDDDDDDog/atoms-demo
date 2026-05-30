@@ -16,6 +16,16 @@ export type RunLogEntry = {
   detail: string;
 };
 
+export type GeneratedAppIssue = {
+  code: "missing-entry" | "missing-file" | "empty-preview";
+  message: string;
+};
+
+export type GeneratedAppCheck = {
+  ok: boolean;
+  issues: GeneratedAppIssue[];
+};
+
 export type GeneratedApp = {
   id: string;
   title: string;

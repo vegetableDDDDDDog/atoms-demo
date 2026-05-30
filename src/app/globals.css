@@ -357,6 +357,36 @@ button {
   white-space: nowrap;
 }
 
+.repair-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #775a28;
+  border-radius: 10px;
+  background: #332817;
+  padding: 12px;
+}
+
+.repair-panel strong {
+  color: #ffe0a3;
+}
+
+.repair-panel ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #e4cfa4;
+  line-height: 1.5;
+}
+
+.repair-panel button {
+  justify-self: start;
+  min-height: 34px;
+  border-radius: 8px;
+  background: #f0c66d;
+  color: #1f1606;
+  padding: 0 12px;
+  font-weight: 800;
+}
+
 .workspace-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

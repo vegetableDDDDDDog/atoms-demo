@@ -1,10 +1,12 @@
 import type { QueryAnalysis } from "@/features/query/analyzeUserQuery";
-import type { GeneratedApp, GeneratedFile, GeneratedModule, RunLogEntry } from "./types";
+import type { GeneratedApp, GeneratedAppCheck, GeneratedAppIssue, GeneratedFile, GeneratedModule, RunLogEntry } from "./types";
 
 type GenerateAppInput = {
   prompt: string;
   analysis: QueryAnalysis;
 };
+
+const requiredFilePaths = ["index.html", "styles.css", "app.js"];
 
 function escapeHtml(value: string) {
   return value
@@ -260,10 +262,7 @@ function buildLogs(title: string, modules: GeneratedModule[]): RunLogEntry[] {
   ];
 }
 
-export function generateApp({ prompt, analysis }: GenerateAppInput): GeneratedApp {
-  const title = titleFromAnalysis(prompt, analysis);
-  const modules = modulesFromAnalysis(analysis);
-  const fields = modules.map((module) => module.title);
+function buildGeneratedFiles(title: string, modules: GeneratedModule[], fields: string[]) {
   const indexHtml = buildIndexHtml(title, modules, fields);
   const stylesCss = buildStylesCss();
   const appJs = buildAppJs(fields);
@@ -274,13 +273,69 @@ export function generateApp({ prompt, analysis }: GenerateAppInput): GeneratedAp
   ];
 
   return {
+    files,
+    previewHtml: composePreviewHtml(indexHtml, stylesCss, appJs)
+  };
+}
+
+export function generateApp({ prompt, analysis }: GenerateAppInput): GeneratedApp {
+  const title = titleFromAnalysis(prompt, analysis);
+  const modules = modulesFromAnalysis(analysis);
+  const fields = modules.map((module) => module.title);
+  const generated = buildGeneratedFiles(title, modules, fields);
+
+  return {
     id: `artifact-${hashText(prompt)}`,
     title,
     modules,
     fields,
-    files,
+    files: generated.files,
     entryFile: "index.html",
-    previewHtml: composePreviewHtml(indexHtml, stylesCss, appJs),
+    previewHtml: generated.previewHtml,
     logs: buildLogs(title, modules)
+  };
+}
+
+export function verifyGeneratedApp(app: GeneratedApp): GeneratedAppCheck {
+  const issues: GeneratedAppIssue[] = [];
+  const filePaths = new Set(app.files.map((file) => file.path));
+
+  if (!filePaths.has(app.entryFile)) {
+    issues.push({ code: "missing-entry", message: `缺少入口文件 ${app.entryFile}` });
+  }
+
+  for (const path of requiredFilePaths) {
+    if (!filePaths.has(path) && path !== app.entryFile) {
+      issues.push({ code: "missing-file", message: `缺少文件 ${path}` });
+    }
+  }
+
+  if (!app.previewHtml.trim()) {
+    issues.push({ code: "empty-preview", message: "预览内容为空" });
+  }
+
+  return {
+    ok: issues.length === 0,
+    issues
+  };
+}
+
+export function repairGeneratedApp(app: GeneratedApp): GeneratedApp {
+  const generated = buildGeneratedFiles(app.title, app.modules, app.fields);
+
+  return {
+    ...app,
+    files: generated.files,
+    entryFile: "index.html",
+    previewHtml: generated.previewHtml,
+    logs: [
+      ...app.logs,
+      {
+        id: `repair-${app.logs.length + 1}`,
+        label: "一键修复",
+        status: "done",
+        detail: "已补齐缺失文件并重新生成预览。"
+      }
+    ]
   };
 }
