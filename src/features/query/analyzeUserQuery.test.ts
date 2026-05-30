@@ -23,9 +23,11 @@ describe("analyzeUserQuery", () => {
 
     expect(result.intent).toBe("build");
     expect(result.summary).toContain("校园社团活动报名系统");
-    expect(result.steps).toContain("生成需求规格");
+    expect(result.steps).toContain("理解实现目标");
+    expect(result.steps).toContain("整理需求理解");
     expect(result.steps).toContain("生成界面与交互");
-    expect(result.sections.find((section) => section.title === "需求规格")?.items).toEqual([
+    expect(result.sections.find((section) => section.title === "需求理解")?.items).toContain("目标应用：校园社团活动报名系统");
+    expect(result.sections.find((section) => section.title === "功能拆解")?.items).toEqual([
       "活动发布",
       "学生报名",
       "名额限制",
@@ -33,10 +35,9 @@ describe("analyzeUserQuery", () => {
     ]);
     expect(result.sections.find((section) => section.title === "页面结构")?.items).toContain("校园社团活动报名系统首页");
     expect(result.sections.find((section) => section.title === "预期文件")?.items).toEqual([
-      "app/spec.json",
-      "app/page.tsx",
-      "app/actions.ts",
-      "tests/smoke.spec.ts"
+      "index.html",
+      "styles.css",
+      "app.js"
     ]);
   });
 
@@ -46,5 +47,21 @@ describe("analyzeUserQuery", () => {
     expect(result.intent).toBe("build");
     expect(result.context).toContain("需求说明.md");
     expect(result.context).toContain("首页截图.png");
+  });
+
+  it("detects revision requests", () => {
+    const result = analyzeUserQuery("把页面改成移动端优先，并增加筛选功能");
+
+    expect(result.intent).toBe("revise");
+    expect(result.summary).toContain("修改需求");
+    expect(result.sections.map((section) => section.title)).toEqual(["变更理解", "影响范围", "任务步骤", "预期生成文件"]);
+    expect(result.sections.find((section) => section.title === "任务步骤")?.items).toContain("更新生成文件");
+  });
+
+  it("treats ambiguous product names as consult requests first", () => {
+    const result = analyzeUserQuery("需求管理系统");
+
+    expect(result.intent).toBe("consult");
+    expect(result.sections.find((section) => section.title === "下一步")?.items).toContain("确认后转入实现计划");
   });
 });

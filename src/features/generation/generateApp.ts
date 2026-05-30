@@ -30,7 +30,7 @@ function findSection(analysis: QueryAnalysis, title: string) {
 }
 
 function titleFromAnalysis(prompt: string, analysis: QueryAnalysis) {
-  const summaryTitle = analysis.summary.replace(/^准备实现：/, "").trim();
+  const summaryTitle = analysis.summary.replace(/^(准备实现|修改需求)：/, "").trim();
   if (summaryTitle && summaryTitle !== analysis.summary) {
     return summaryTitle;
   }
@@ -40,7 +40,7 @@ function titleFromAnalysis(prompt: string, analysis: QueryAnalysis) {
 }
 
 function modulesFromAnalysis(analysis: QueryAnalysis): GeneratedModule[] {
-  const features = findSection(analysis, "需求规格");
+  const features = findSection(analysis, "功能拆解").length > 0 ? findSection(analysis, "功能拆解") : findSection(analysis, "需求规格");
   const items = features.length > 0 ? features : ["核心信息录入", "列表查看", "状态流转"];
 
   return items.map((item) => ({

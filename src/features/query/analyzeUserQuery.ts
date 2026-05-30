@@ -1,4 +1,4 @@
-export type QueryIntent = "consult" | "build";
+export type QueryIntent = "consult" | "build" | "revise";
 
 export type QueryAnalysis = {
   intent: QueryIntent;
@@ -12,6 +12,7 @@ export type QueryAnalysis = {
 };
 
 const consultWords = ["分析", "解释", "建议", "怎么", "如何", "方案", "区别", "review", "explain", "analyze", "suggest"];
+const reviseWords = ["修改", "修复", "增加", "删除", "改成", "调整", "优化", "change", "update", "revise", "remove", "add"];
 
 function includesAny(value: string, words: string[]) {
   const normalized = value.toLowerCase();
@@ -34,6 +35,10 @@ function hasExplicitBuildIntent(query: string) {
     /(?:修改|修复|发布)[^？?。]*(?:页面|代码|bug|问题|功能|应用|系统)/.test(query) ||
     /\b(build|create|implement|generate|fix)\b/.test(normalized)
   );
+}
+
+function hasRevisionIntent(query: string) {
+  return includesAny(query, reviseWords);
 }
 
 function extractFeatures(query: string) {
@@ -66,10 +71,26 @@ function buildDataObjects(subject: string, features: string[]) {
 export function analyzeUserQuery(query: string, attachmentNames: string[] = []): QueryAnalysis {
   const trimmed = query.trim();
   const hasConsultIntent = includesAny(trimmed, consultWords);
-  const isBuild = hasExplicitBuildIntent(trimmed) || !hasConsultIntent;
+  const isRevision = hasRevisionIntent(trimmed);
+  const isBuild = hasExplicitBuildIntent(trimmed);
   const subject = extractSubject(trimmed);
   const attachmentContext =
     attachmentNames.length > 0 ? `附件上下文：${attachmentNames.join("、")}` : "无附件";
+
+  if (isRevision) {
+    return {
+      intent: "revise",
+      summary: `修改需求：${subject}`,
+      context: attachmentContext,
+      steps: ["理解变更目标", "定位影响范围", "更新生成文件", "重新检查预览"],
+      sections: [
+        { title: "变更理解", items: [`用户希望调整：${subject}`] },
+        { title: "影响范围", items: ["页面文案", "交互结构", "生成文件", "预览结果"] },
+        { title: "任务步骤", items: ["读取当前生成结果", "更新生成文件", "重新渲染预览", "记录变更摘要"] },
+        { title: "预期生成文件", items: ["index.html", "styles.css", "app.js"] }
+      ]
+    };
+  }
 
   if (!isBuild) {
     return {
@@ -92,13 +113,14 @@ export function analyzeUserQuery(query: string, attachmentNames: string[] = []):
     intent: "build",
     summary: `准备实现：${subject}`,
     context: attachmentContext,
-    steps: ["解析用户需求", "生成需求规格", "制定实施计划", "生成界面与交互", "检查预览并给出修复入口"],
+    steps: ["理解实现目标", "整理需求理解", "制定实施计划", "生成界面与交互", "检查预览并给出修复入口"],
     sections: [
-      { title: "需求规格", items: normalizedFeatures },
+      { title: "需求理解", items: [`目标应用：${subject}`, `核心上下文：${attachmentContext}`] },
+      { title: "功能拆解", items: normalizedFeatures },
       { title: "页面结构", items: buildPages(subject, normalizedFeatures) },
       { title: "数据结构", items: buildDataObjects(subject, normalizedFeatures) },
       { title: "任务步骤", items: ["创建页面骨架", "实现表单和列表", "接入本地状态", "生成预览检查"] },
-      { title: "预期文件", items: ["app/spec.json", "app/page.tsx", "app/actions.ts", "tests/smoke.spec.ts"] }
+      { title: "预期文件", items: ["index.html", "styles.css", "app.js"] }
     ]
   };
 }

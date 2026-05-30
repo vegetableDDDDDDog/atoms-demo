@@ -4,32 +4,8 @@ import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "
 import { generateApp } from "@/features/generation/generateApp";
 import type { GeneratedApp } from "@/features/generation/types";
 import { analyzeUserQuery, type QueryAnalysis } from "@/features/query/analyzeUserQuery";
+import { loadSessions, saveSessions, type AppMessage, type AppSession, type WorkspaceTab } from "@/features/session/sessionStorage";
 import { GenerationWorkspace } from "./GenerationWorkspace";
-
-type Message = {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  analysis?: QueryAnalysis;
-  app?: GeneratedApp;
-};
-
-type Session = {
-  id: string;
-  title: string;
-  createdAtLabel: string;
-  messages: Message[];
-};
-
-const seedSessions: Session[] = [
-  { id: "s1", title: "确认已部署测试链接要求", createdAtLabel: "5 小时", messages: [] },
-  { id: "s2", title: "京东面试回顾", createdAtLabel: "5 小时", messages: [] },
-  { id: "s3", title: "解释 SSE 断点重连", createdAtLabel: "3 天", messages: [] },
-  { id: "s4", title: "整理 Redis 高频面试题", createdAtLabel: "3 天", messages: [] },
-  { id: "s5", title: "分析 OpenClaw 功能架构", createdAtLabel: "1 周", messages: [] }
-];
-
-const storageKey = "atoms-demo-sessions-v1";
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -41,16 +17,18 @@ function titleFromPrompt(prompt: string) {
 }
 
 function buildAssistantText(analysis: QueryAnalysis) {
-  const mode = analysis.intent === "build" ? "实现类" : "咨询类";
+  const mode = analysis.intent === "build" ? "实现类" : analysis.intent === "revise" ? "修改类" : "咨询类";
   return `意图识别：${mode}\n${analysis.summary}\n${analysis.context}`;
 }
 
 export function BuildRoom() {
-  const [sessions, setSessions] = useState<Session[]>(seedSessions);
+  const [sessions, setSessions] = useState<AppSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [isStorageReady, setIsStorageReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const activeSession = useMemo(
     () => sessions.find((session) => session.id === activeSessionId) ?? null,
@@ -58,24 +36,19 @@ export function BuildRoom() {
   );
   const latestAnalysis = activeSession?.messages.findLast((message) => message.analysis)?.analysis ?? null;
   const latestApp = activeSession?.messages.findLast((message) => message.app)?.app ?? null;
+  const activeWorkspaceTab = activeSession?.activeWorkspaceTab ?? "preview";
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(storageKey);
-    if (!stored) return;
-
-    try {
-      const parsed = JSON.parse(stored) as Session[];
-      if (Array.isArray(parsed)) {
-        setSessions(parsed);
-      }
-    } catch {
-      window.localStorage.removeItem(storageKey);
-    }
+    const savedSessions = loadSessions(window.localStorage);
+    setSessions(savedSessions);
+    setActiveSessionId(savedSessions[0]?.id ?? null);
+    setIsStorageReady(true);
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(sessions));
-  }, [sessions]);
+    if (!isStorageReady) return;
+    saveSessions(window.localStorage, sessions);
+  }, [isStorageReady, sessions]);
 
   function startEmptySession() {
     setActiveSessionId(null);
@@ -84,13 +57,13 @@ export function BuildRoom() {
   }
 
   function sendMessage() {
-    const prompt = draft.trim();
+    const prompt = (textareaRef.current?.value ?? draft).trim();
     if (!prompt) return;
 
     const analysis = analyzeUserQuery(prompt, attachments);
-    const app = analysis.intent === "build" ? generateApp({ prompt, analysis }) : undefined;
-    const userMessage: Message = { id: createId("m"), role: "user", text: prompt };
-    const assistantMessage: Message = {
+    const app = analysis.intent === "build" || analysis.intent === "revise" ? generateApp({ prompt, analysis }) : undefined;
+    const userMessage: AppMessage = { id: createId("m"), role: "user", text: prompt, attachments };
+    const assistantMessage: AppMessage = {
       id: createId("m"),
       role: "assistant",
       text: buildAssistantText(analysis),
@@ -102,15 +75,21 @@ export function BuildRoom() {
       setSessions((current) =>
         current.map((session) =>
           session.id === activeSession.id
-            ? { ...session, messages: [...session.messages, userMessage, assistantMessage], title: session.title || titleFromPrompt(prompt) }
+            ? {
+                ...session,
+                activeWorkspaceTab: app ? "preview" : session.activeWorkspaceTab,
+                messages: [...session.messages, userMessage, assistantMessage],
+                title: session.title || titleFromPrompt(prompt)
+              }
             : session
         )
       );
     } else {
-      const session: Session = {
+      const session: AppSession = {
         id: createId("s"),
         title: titleFromPrompt(prompt),
         createdAtLabel: "刚刚",
+        activeWorkspaceTab: app ? "preview" : undefined,
         messages: [userMessage, assistantMessage]
       };
       setSessions((current) => [session, ...current]);
@@ -118,6 +97,9 @@ export function BuildRoom() {
     }
 
     setDraft("");
+    if (textareaRef.current) {
+      textareaRef.current.value = "";
+    }
     setAttachments([]);
   }
 
@@ -131,6 +113,26 @@ export function BuildRoom() {
       event.preventDefault();
       sendMessage();
     }
+  }
+
+  function updateWorkspaceTab(tab: WorkspaceTab) {
+    if (!activeSession) return;
+    setSessions((current) =>
+      current.map((session) => (session.id === activeSession.id ? { ...session, activeWorkspaceTab: tab } : session))
+    );
+  }
+
+  function updateLatestApp(app: GeneratedApp) {
+    if (!activeSession) return;
+    setSessions((current) =>
+      current.map((session) => {
+        if (session.id !== activeSession.id) return session;
+        const lastAppIndex = session.messages.findLastIndex((message) => message.app);
+        if (lastAppIndex === -1) return session;
+        const messages = session.messages.map((message, index) => (index === lastAppIndex ? { ...message, app } : message));
+        return { ...session, messages };
+      })
+    );
   }
 
   return (
@@ -171,6 +173,13 @@ export function BuildRoom() {
                 <article className="message-card" data-role={message.role} key={message.id}>
                   <strong>{message.role === "user" ? "你" : "Atoms"}</strong>
                   <p>{message.text}</p>
+                  {message.attachments?.length ? (
+                    <div className="message-attachments">
+                      {message.attachments.map((name) => (
+                        <span key={name}>{name}</span>
+                      ))}
+                    </div>
+                  ) : null}
                   {message.analysis ? (
                     <div className="analysis-block">
                       <ol>
@@ -200,7 +209,9 @@ export function BuildRoom() {
           <form className="create-box" onSubmit={submit}>
             <textarea
               aria-label="描述你想创造的产品"
+              ref={textareaRef}
               onChange={(event) => setDraft(event.target.value)}
+              onInput={(event) => setDraft(event.currentTarget.value)}
               onKeyDown={handleKeyDown}
               placeholder="描述你想创造的产品，或提出一个需要分析的问题"
               value={draft}
@@ -225,14 +236,21 @@ export function BuildRoom() {
               <button aria-label="上传附件" className="circle-btn" type="button" onClick={() => fileInputRef.current?.click()}>
                 ＋
               </button>
-              <button aria-label="发送" className="send-btn" disabled={!draft.trim()} type="submit">
+              <button aria-label="发送" className="send-btn" type="submit">
                 ↑
               </button>
             </div>
           </form>
         </section>
 
-        {latestAnalysis?.intent === "build" && latestApp ? <GenerationWorkspace app={latestApp} /> : null}
+        {(latestAnalysis?.intent === "build" || latestAnalysis?.intent === "revise") && latestApp ? (
+          <GenerationWorkspace
+            activeTab={activeWorkspaceTab}
+            app={latestApp}
+            onAppChange={updateLatestApp}
+            onTabChange={updateWorkspaceTab}
+          />
+        ) : null}
       </section>
     </main>
   );

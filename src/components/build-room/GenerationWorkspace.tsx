@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { repairGeneratedApp, verifyGeneratedApp } from "@/features/generation/generateApp";
 import type { GeneratedApp } from "@/features/generation/types";
+import type { WorkspaceTab } from "@/features/session/sessionStorage";
 import { CodeViewer } from "./CodeViewer";
 import { PreviewFrame } from "./PreviewFrame";
 import { RunLog } from "./RunLog";
 
 type GenerationWorkspaceProps = {
   app: GeneratedApp;
+  activeTab: WorkspaceTab;
+  onAppChange: (app: GeneratedApp) => void;
+  onTabChange: (tab: WorkspaceTab) => void;
 };
-
-type WorkspaceTab = "preview" | "code" | "logs";
 
 const tabs: Array<{ id: WorkspaceTab; label: string }> = [
   { id: "preview", label: "预览" },
@@ -19,19 +21,12 @@ const tabs: Array<{ id: WorkspaceTab; label: string }> = [
   { id: "logs", label: "执行日志" }
 ];
 
-export function GenerationWorkspace({ app }: GenerationWorkspaceProps) {
-  const [currentApp, setCurrentApp] = useState(app);
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("preview");
-  const check = useMemo(() => verifyGeneratedApp(currentApp), [currentApp]);
-
-  useEffect(() => {
-    setCurrentApp(app);
-    setActiveTab("preview");
-  }, [app]);
+export function GenerationWorkspace({ activeTab, app, onAppChange, onTabChange }: GenerationWorkspaceProps) {
+  const check = useMemo(() => verifyGeneratedApp(app), [app]);
 
   function repair() {
-    setCurrentApp((value) => repairGeneratedApp(value));
-    setActiveTab("logs");
+    onAppChange(repairGeneratedApp(app));
+    onTabChange("logs");
   }
 
   return (
@@ -39,7 +34,7 @@ export function GenerationWorkspace({ app }: GenerationWorkspaceProps) {
       <header>
         <div>
           <p>生成工作区</p>
-          <strong>{currentApp.title}</strong>
+          <strong>{app.title}</strong>
         </div>
         <span>{check.ok ? "检查通过" : "检查失败"}</span>
       </header>
@@ -60,16 +55,16 @@ export function GenerationWorkspace({ app }: GenerationWorkspaceProps) {
 
       <nav className="workspace-tabs" aria-label="生成结果标签">
         {tabs.map((tab) => (
-          <button data-active={activeTab === tab.id} key={tab.id} onClick={() => setActiveTab(tab.id)} type="button">
+          <button data-active={activeTab === tab.id} key={tab.id} onClick={() => onTabChange(tab.id)} type="button">
             {tab.label}
           </button>
         ))}
       </nav>
 
       <section className="workspace-body">
-        {activeTab === "preview" ? <PreviewFrame app={currentApp} /> : null}
-        {activeTab === "code" ? <CodeViewer app={currentApp} /> : null}
-        {activeTab === "logs" ? <RunLog app={currentApp} /> : null}
+        {activeTab === "preview" ? <PreviewFrame app={app} /> : null}
+        {activeTab === "code" ? <CodeViewer app={app} /> : null}
+        {activeTab === "logs" ? <RunLog app={app} /> : null}
       </section>
     </aside>
   );
