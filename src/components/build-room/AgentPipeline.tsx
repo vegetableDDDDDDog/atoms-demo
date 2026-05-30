@@ -1,4 +1,5 @@
 import type { BuildRoomCopy } from "@/features/i18n/dictionary";
+import type { DecoratedProgressStep } from "@/features/progress/generationProgress";
 
 type Step = {
   id: string;
@@ -11,31 +12,47 @@ type Step = {
 
 export function AgentPipeline({
   steps,
+  progressSteps,
   isGenerating,
   copy
 }: {
   steps: Step[];
+  progressSteps: DecoratedProgressStep[];
   isGenerating: boolean;
   copy: BuildRoomCopy;
 }) {
+  const shouldShowProgress = progressSteps.length > 0;
+
   return (
     <section>
       <p className="section-title">{copy.agentPipeline}</p>
       <div className="pipeline">
-        {isGenerating ? <div className="card agent-step">{copy.agentsBuilding}</div> : null}
-        {steps.length === 0 ? (
+        {isGenerating && !shouldShowProgress ? <div className="card agent-step">{copy.agentsBuilding}</div> : null}
+        {shouldShowProgress
+          ? progressSteps.map((step) => (
+              <article key={`${step.agent}-${step.title}`} className="card agent-step" data-status={step.status}>
+                <div className="agent-step-header">
+                  <strong>
+                    {step.agent}: {step.title}
+                  </strong>
+                  <span className="step-status">{copy.progressStatusLabels[step.status]}</span>
+                </div>
+                <p>{step.content}</p>
+              </article>
+            ))
+          : null}
+        {!shouldShowProgress && steps.length === 0 ? (
           <p style={{ color: "var(--muted)", margin: 0 }}>{copy.agentEmpty}</p>
         ) : null}
-        {steps.map((step) => (
+        {!shouldShowProgress ? steps.map((step) => (
           <article key={step.id} className="card agent-step">
             <strong>
               {step.agent}: {step.title}
             </strong>
             <p>{step.content}</p>
           </article>
-        ))}
+        )) : null}
       </div>
     </section>
   );
 }
-

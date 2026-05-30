@@ -57,10 +57,9 @@ export function PromptComposer({
         />
         <button className="button-primary" onClick={() => onSubmit(prompt)} disabled={disabled || !prompt.trim()}>
           <Send size={16} />
-          {copy.run}
+          {disabled ? copy.runInProgress : copy.run}
         </button>
       </div>
     </section>
   );
 }
-

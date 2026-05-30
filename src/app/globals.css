@@ -333,6 +333,68 @@ button:disabled {
   padding: 24px;
 }
 
+.generation-progress {
+  min-height: 560px;
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  padding: 32px;
+}
+
+.generation-progress-copy {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  max-width: 640px;
+}
+
+.generation-progress-copy strong {
+  font-size: 26px;
+  line-height: 1.15;
+}
+
+.generation-progress-copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.progress-meter {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e3e9f2;
+}
+
+.progress-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width .35s ease;
+}
+
+.progress-current-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  padding: 10px 12px;
+}
+
+.progress-current-step span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.progress-current-step strong {
+  font-size: 13px;
+}
+
 .preview-frame {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -366,9 +428,55 @@ button:disabled {
   padding: 12px;
 }
 
+.agent-step[data-status="waiting"] {
+  opacity: .68;
+}
+
+.agent-step[data-status="active"] {
+  border-color: rgba(36, 92, 61, .45);
+  box-shadow: 0 0 0 3px rgba(36, 92, 61, .08), 0 14px 36px rgba(15, 23, 42, .08);
+}
+
+.agent-step[data-status="done"] {
+  background: #fbfdfb;
+}
+
+.agent-step[data-status="error"] {
+  border-color: rgba(154, 91, 18, .45);
+  background: #fffaf2;
+}
+
+.agent-step-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
 .agent-step strong {
   display: block;
   font-size: 13px;
+}
+
+.step-status {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #eef3f8;
+  color: var(--muted);
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.agent-step[data-status="active"] .step-status,
+.agent-step[data-status="done"] .step-status {
+  background: #e8f2ed;
+  color: var(--accent);
+}
+
+.agent-step[data-status="error"] .step-status {
+  background: #fff0dd;
+  color: var(--warning);
 }
 
 .agent-step p {
