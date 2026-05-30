@@ -34,3 +34,4 @@ Thumbs.db
 
 # Local brainstorming sketches and temporary artifacts
 .superpowers/
+.worktrees/
