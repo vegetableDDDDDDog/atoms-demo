@@ -7,6 +7,10 @@ import { analyzeUserQuery, type QueryAnalysis } from "@/features/query/analyzeUs
 import { loadSessions, saveSessions, type AppMessage, type AppSession, type WorkspaceTab } from "@/features/session/sessionStorage";
 import { GenerationWorkspace } from "./GenerationWorkspace";
 
+const localStorageResetKey = "atoms-demo-clean-reset-token";
+const localStorageResetValue = "2026-05-30-core-loop-clean";
+const legacySessionKeys = ["atoms-demo-sessions-v1", "atoms-demo-sessions-v2", "atoms-demo-sessions-v3"];
+
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -39,6 +43,10 @@ export function BuildRoom() {
   const activeWorkspaceTab = activeSession?.activeWorkspaceTab ?? "preview";
 
   useEffect(() => {
+    if (window.localStorage.getItem(localStorageResetKey) !== localStorageResetValue) {
+      legacySessionKeys.forEach((key) => window.localStorage.removeItem(key));
+      window.localStorage.setItem(localStorageResetKey, localStorageResetValue);
+    }
     const savedSessions = loadSessions(window.localStorage);
     setSessions(savedSessions);
     setActiveSessionId(savedSessions[0]?.id ?? null);
