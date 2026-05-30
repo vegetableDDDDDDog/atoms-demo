@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { analyzeUserQuery, type QueryAnalysis } from "@/features/query/analyzeUserQuery";
 
 type Message = {
@@ -24,6 +24,8 @@ const seedSessions: Session[] = [
   { id: "s4", title: "整理 Redis 高频面试题", createdAtLabel: "3 天", messages: [] },
   { id: "s5", title: "分析 OpenClaw 功能架构", createdAtLabel: "1 周", messages: [] }
 ];
+
+const storageKey = "atoms-demo-sessions-v1";
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -51,6 +53,24 @@ export function BuildRoom() {
     [activeSessionId, sessions]
   );
   const latestAnalysis = activeSession?.messages.findLast((message) => message.analysis)?.analysis ?? null;
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(storageKey);
+    if (!stored) return;
+
+    try {
+      const parsed = JSON.parse(stored) as Session[];
+      if (Array.isArray(parsed)) {
+        setSessions(parsed);
+      }
+    } catch {
+      window.localStorage.removeItem(storageKey);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(storageKey, JSON.stringify(sessions));
+  }, [sessions]);
 
   function startEmptySession() {
     setActiveSessionId(null);
@@ -145,11 +165,25 @@ export function BuildRoom() {
                   <strong>{message.role === "user" ? "你" : "Atoms"}</strong>
                   <p>{message.text}</p>
                   {message.analysis ? (
-                    <ol>
-                      {message.analysis.steps.map((step) => (
-                        <li key={step}>{step}</li>
-                      ))}
-                    </ol>
+                    <div className="analysis-block">
+                      <ol>
+                        {message.analysis.steps.map((step) => (
+                          <li key={step}>{step}</li>
+                        ))}
+                      </ol>
+                      <div className="analysis-sections">
+                        {message.analysis.sections.map((section) => (
+                          <section key={section.title}>
+                            <h2>{section.title}</h2>
+                            <ul>
+                              {section.items.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          </section>
+                        ))}
+                      </div>
+                    </div>
                   ) : null}
                 </article>
               ))}
@@ -194,7 +228,12 @@ export function BuildRoom() {
         {latestAnalysis?.intent === "build" ? (
           <aside className="build-status">
             <p>构建状态</p>
-            <strong>已生成实施计划，等待执行代码生成</strong>
+            <strong>已生成实施计划</strong>
+            <ul>
+              {latestAnalysis.sections
+                .find((section) => section.title === "预期文件")
+                ?.items.map((item) => <li key={item}>{item}</li>)}
+            </ul>
           </aside>
         ) : null}
       </section>

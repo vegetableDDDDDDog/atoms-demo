@@ -196,6 +196,36 @@ button {
   line-height: 1.5;
 }
 
+.analysis-block {
+  display: grid;
+  gap: 14px;
+}
+
+.analysis-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.analysis-sections section {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #262626;
+  padding: 12px;
+}
+
+.analysis-sections h2 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.analysis-sections ul,
+.build-status ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
 .create-box {
   width: min(720px, 100%);
   border: 1px solid var(--line);
@@ -280,6 +310,11 @@ button {
   color: var(--muted);
 }
 
+.build-status li {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 @media (max-width: 920px) {
   .atoms-page {
     grid-template-columns: 1fr;
@@ -296,5 +331,9 @@ button {
 
   .hero-create h1 {
     font-size: 30px;
+  }
+
+  .analysis-sections {
+    grid-template-columns: 1fr;
   }
 }
