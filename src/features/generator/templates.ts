@@ -110,6 +110,12 @@ const contentByLocale: Record<Locale, Record<AppType, TemplateContent>> = {
       metrics: ["$42.8k value", "+3.2% today", "8 assets"],
       rows: ["NVDA - Watch momentum", "BTC - Rebalance alert", "Cash - Reserve target"]
     },
+    requirements: {
+      title: "Requirements Management System",
+      description: "Track demand intake, requirement review, scheduling, design analysis, development, testing, and closure.",
+      metrics: ["24 requirements", "8 in review", "5 scheduled"],
+      rows: ["Demand intake - Awaiting triage", "Requirement review - Product owner", "Release scope - Scheduled"]
+    },
     operations: {
       title: "Operations Board",
       description: "Prioritize work, assign owners, and keep internal execution visible.",
@@ -135,6 +141,12 @@ const contentByLocale: Record<Locale, Record<AppType, TemplateContent>> = {
       description: "紧凑呈现持仓、关注列表走势和资产配置提醒。",
       metrics: ["¥42.8k 资产", "今日 +3.2%", "8 个资产"],
       rows: ["NVDA - 观察动量", "BTC - 再平衡提醒", "现金 - 储备目标"]
+    },
+    requirements: {
+      title: "需求管理系统",
+      description: "跟踪需求提报、需求评审、需求排期、需求设计与分析、开发、转测、测试和关闭。",
+      metrics: ["24 个需求", "8 个评审中", "5 个已排期"],
+      rows: ["需求提报 - 等待分诊", "需求评审 - 产品负责人", "需求排期 - 已进入版本"]
     },
     operations: {
       title: "运营任务看板",
@@ -185,4 +197,3 @@ export function createTemplate({ prompt, appType, locale = "en", fixRequested }:
 </main>`
   };
 }
-

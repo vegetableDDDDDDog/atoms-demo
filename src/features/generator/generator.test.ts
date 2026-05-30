@@ -15,6 +15,10 @@ describe("classifyPrompt", () => {
     expect(classifyPrompt("Make an internal todo operations board")).toBe("operations");
   });
 
+  it("classifies requirement management prompts as requirements", () => {
+    expect(classifyPrompt("帮我生成一个需求管理系统")).toBe("requirements");
+  });
+
   it("classifies Chinese customer booking prompts as crm", () => {
     expect(classifyPrompt("生成一个客户预约管理应用")).toBe("crm");
   });
@@ -44,5 +48,18 @@ describe("buildGeneratedApp", () => {
     expect(app.title).toBe("客户预约管理");
     expect(app.html).toContain("新增记录");
     expect(app.html).toContain("搜索生成数据");
+  });
+
+  it("generates a requirement management app for requirement prompts", () => {
+    const app = buildGeneratedApp({
+      prompt: "帮我生成一个需求管理系统",
+      mode: "team",
+      locale: "zh"
+    });
+
+    expect(app.appType).toBe("requirements");
+    expect(app.title).toBe("需求管理系统");
+    expect(app.html).toContain("需求评审");
+    expect(app.html).toContain("需求排期");
   });
 });

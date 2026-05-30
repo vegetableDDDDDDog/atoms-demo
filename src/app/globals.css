@@ -319,9 +319,31 @@ button:disabled {
 
 .preview-shell {
   min-height: 560px;
-  display: flex;
-  justify-content: center;
+  display: grid;
+  gap: 12px;
   padding: 12px;
+}
+
+.generated-result-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  padding: 12px;
+}
+
+.generated-result-banner strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.generated-result-banner p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .empty-preview {
@@ -399,6 +421,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #fff;
+  justify-self: center;
 }
 
 .code-panel {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { dictionary, localeStorageKey, resolveLocale, type Locale } from "@/features/i18n/dictionary";
 import { decorateProgressSteps, getProgressPercent, type ProgressState } from "@/features/progress/generationProgress";
 import { AgentPipeline } from "./AgentPipeline";
@@ -67,6 +67,7 @@ export function BuildRoom() {
   const [progressState, setProgressState] = useState<ProgressState>("running");
   const [publishUrl, setPublishUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   const activeVersion = activeRun?.versions[0] ?? null;
   const copy = dictionary[locale];
@@ -98,6 +99,12 @@ export function BuildRoom() {
     setLocale(resolveLocale(window.localStorage.getItem(localeStorageKey)));
     refreshProjects().catch(() => setError(dictionary.en.errors.loadProjects));
   }, []);
+
+  useEffect(() => {
+    if (activeVersion && activeProgressIndex === null) {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [activeProgressIndex, activeVersion]);
 
   useEffect(() => {
     if (!isGenerating || activeProgressIndex === null) return;
@@ -241,7 +248,7 @@ export function BuildRoom() {
           onLocaleChange={changeLocale}
           copy={copy}
         />
-        <div className="result-header">
+        <div className="result-header" ref={resultRef}>
           <div>
             <p className="section-title">{copy.generatedWorkspace}</p>
             <p>{resultDescription}</p>
@@ -266,6 +273,7 @@ export function BuildRoom() {
             mode={view}
             empty={!activeVersion}
             copy={copy}
+            version={activeVersion}
             progress={
               activeProgressStep
                 ? {

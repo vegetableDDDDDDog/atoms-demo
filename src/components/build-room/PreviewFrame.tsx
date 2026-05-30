@@ -6,12 +6,14 @@ export function PreviewFrame({
   mode,
   empty,
   copy,
+  version,
   progress
 }: {
   document: string;
   mode: "desktop" | "mobile" | "code";
   empty: boolean;
   copy: BuildRoomCopy;
+  version: { title: string; description: string } | null;
   progress: { percent: number; state: ProgressState; step: DecoratedProgressStep } | null;
 }) {
   const width = mode === "mobile" ? 390 : "100%";
@@ -54,6 +56,15 @@ export function PreviewFrame({
 
   return (
     <section className="card preview-shell">
+      {version ? (
+        <div className="generated-result-banner">
+          <span className="status-pill">{copy.generatedCompleteLabel}</span>
+          <div>
+            <strong>{version.title}</strong>
+            <p>{copy.generatedPreviewHint}</p>
+          </div>
+        </div>
+      ) : null}
       <iframe
         title={copy.previewTitle}
         sandbox="allow-scripts"

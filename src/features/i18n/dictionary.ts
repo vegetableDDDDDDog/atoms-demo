@@ -48,6 +48,8 @@ export const dictionary = {
     previewStandbyTitle: "Generated app preview",
     previewStandbyBody: "After you run the builder, the generated web app appears here.",
     previewTitle: "Generated app preview",
+    generatedCompleteLabel: "Generated app",
+    generatedPreviewHint: "This is the runnable web app created from your request.",
     progressTitle: "Generating your app",
     progressCompleteTitle: "Finalizing preview",
     progressErrorTitle: "Generation needs attention",
@@ -117,6 +119,8 @@ export const dictionary = {
     previewStandbyTitle: "生成应用预览",
     previewStandbyBody: "运行构建器后，生成出来的网页应用会显示在这里。",
     previewTitle: "生成应用预览",
+    generatedCompleteLabel: "已生成应用",
+    generatedPreviewHint: "这是根据你的需求生成出来的可运行网页应用。",
     progressTitle: "正在生成你的应用",
     progressCompleteTitle: "正在整理预览",
     progressErrorTitle: "生成过程需要处理",
@@ -150,4 +154,3 @@ export const dictionary = {
 } as const satisfies Record<Locale, Record<string, unknown>>;
 
 export type BuildRoomCopy = (typeof dictionary)[Locale];
-
