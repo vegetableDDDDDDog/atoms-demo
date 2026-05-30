@@ -10,7 +10,7 @@ export function PreviewFrame({
   progress
 }: {
   document: string;
-  mode: "desktop" | "mobile" | "code";
+  mode: "preview" | "mobile";
   empty: boolean;
   copy: BuildRoomCopy;
   version: { title: string; description: string } | null;

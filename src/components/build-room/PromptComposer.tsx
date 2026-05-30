@@ -2,19 +2,15 @@
 
 import { Send } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { BuildRoomCopy, Locale } from "@/features/i18n/dictionary";
+import type { BuildRoomCopy } from "@/features/i18n/dictionary";
 
 export function PromptComposer({
   onSubmit,
   disabled,
-  locale,
-  onLocaleChange,
   copy
 }: {
   onSubmit: (prompt: string) => void;
   disabled: boolean;
-  locale: Locale;
-  onLocaleChange: (locale: Locale) => void;
   copy: BuildRoomCopy;
 }) {
   const [prompt, setPrompt] = useState<string>(copy.defaultPrompt);
@@ -27,22 +23,11 @@ export function PromptComposer({
   }, [copy.defaultPrompt, isEdited]);
 
   return (
-    <section className="card composer">
+    <section className="card composer conversation-card">
       <div className="composer-header">
         <div>
           <h2>{copy.buildRoomTitle}</h2>
           <p>{copy.tagline}</p>
-        </div>
-        <div className="composer-actions">
-          <div className="language-toggle" aria-label={copy.languageLabel}>
-            <button type="button" aria-pressed={locale === "zh"} data-active={locale === "zh"} onClick={() => onLocaleChange("zh")}>
-              中文
-            </button>
-            <button type="button" aria-pressed={locale === "en"} data-active={locale === "en"} onClick={() => onLocaleChange("en")}>
-              English
-            </button>
-          </div>
-          <span className="status-pill">{disabled ? copy.running : copy.ready}</span>
         </div>
       </div>
       <div className="prompt-grid">

@@ -6,6 +6,8 @@ import { decorateProgressSteps, getProgressPercent, type ProgressState } from "@
 import { AgentPipeline } from "./AgentPipeline";
 import { CodePanel } from "./CodePanel";
 import { DemoBrief } from "./DemoBrief";
+import { DeployPanel } from "./DeployPanel";
+import { DiffPanel } from "./DiffPanel";
 import { PreviewFrame } from "./PreviewFrame";
 import { ProjectSidebar } from "./ProjectSidebar";
 import { PromptComposer } from "./PromptComposer";
@@ -47,6 +49,8 @@ export type ProjectSummary = {
   publishes: Array<{ slug: string; isActive: boolean }>;
 };
 
+type WorkspaceView = "preview" | "mobile" | "code" | "diff" | "deploy";
+
 const minimumProgressMs = 2800;
 const completionPauseMs = 350;
 const progressTickMs = 620;
@@ -60,12 +64,13 @@ function wait(ms: number) {
 export function BuildRoom() {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [activeRun, setActiveRun] = useState<Run | null>(null);
-  const [view, setView] = useState<"desktop" | "mobile" | "code">("desktop");
+  const [view, setView] = useState<WorkspaceView>("preview");
   const [locale, setLocale] = useState<Locale>("en");
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeProgressIndex, setActiveProgressIndex] = useState<number | null>(null);
   const [progressState, setProgressState] = useState<ProgressState>("running");
   const [publishUrl, setPublishUrl] = useState<string | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
 
@@ -88,6 +93,7 @@ export function BuildRoom() {
       : activeVersion
         ? copy.generatedResultReady
         : copy.generatedResultEmpty;
+  const latestRequest = activeRun?.inputPrompt ?? lastPrompt;
 
   async function refreshProjects() {
     const response = await fetch("/api/projects");
@@ -140,6 +146,8 @@ export function BuildRoom() {
   async function startBuild(prompt: string) {
     const startedAt = Date.now();
     setIsGenerating(true);
+    setView("preview");
+    setLastPrompt(prompt);
     beginProgress();
     setActiveRun(null);
     setPublishUrl(null);
@@ -177,6 +185,7 @@ export function BuildRoom() {
     if (!activeRun) return;
     const startedAt = Date.now();
     setIsGenerating(true);
+    setView("preview");
     beginProgress();
     setError(null);
     let succeeded = false;
@@ -237,81 +246,138 @@ export function BuildRoom() {
   }, [activeVersion]);
 
   return (
-    <main className="app-shell">
-      <ProjectSidebar projects={projects} copy={copy} />
-      <section className="workspace">
-        <DemoBrief copy={copy} />
-        <PromptComposer
-          onSubmit={startBuild}
-          disabled={isGenerating}
-          locale={locale}
-          onLocaleChange={changeLocale}
-          copy={copy}
-        />
-        <div className="result-header" ref={resultRef}>
+    <main className="workspace-shell">
+      <header className="workspace-topbar">
+        <div className="topbar-brand">
+          <strong>{copy.brandName}</strong>
+          <span>{copy.workspaceSubtitle}</span>
+        </div>
+        <div className="topbar-meta">
+          <span>
+            {copy.currentProject}: {activeRun?.project.name ?? copy.noBuilds}
+          </span>
+          <span>
+            {copy.workspaceMode}: {copy.teamMode}
+          </span>
+          <span className="status-pill">{isGenerating ? copy.running : copy.ready}</span>
+          <div className="language-toggle" aria-label={copy.languageLabel}>
+            <button type="button" aria-pressed={locale === "zh"} data-active={locale === "zh"} onClick={() => changeLocale("zh")}>
+              中文
+            </button>
+            <button type="button" aria-pressed={locale === "en"} data-active={locale === "en"} onClick={() => changeLocale("en")}>
+              English
+            </button>
+          </div>
+        </div>
+      </header>
+      <div className="workspace-grid">
+        <ProjectSidebar projects={projects} activeVersion={activeVersion} copy={copy} />
+        <section className="conversation-panel">
+          <DemoBrief copy={copy} />
+          <PromptComposer onSubmit={startBuild} disabled={isGenerating} copy={copy} />
+          <section className="card conversation-card latest-request">
+            <div>
+              <p className="section-title">{copy.conversationTitle}</p>
+              <p>{copy.conversationSubtitle}</p>
+            </div>
+            {latestRequest ? (
+              <article className="request-bubble">
+                <span>{copy.userRequestLabel}</span>
+                <p>{latestRequest}</p>
+              </article>
+            ) : null}
+          </section>
+          <AgentPipeline
+            steps={activeRun?.steps ?? []}
+            progressSteps={progressSteps}
+            isGenerating={isGenerating}
+            copy={copy}
+          />
+          <section className="card conversation-card next-actions">
+            <div>
+              <p className="section-title">{copy.nextActionsLabel}</p>
+              <div className="suggestion-row">
+                {copy.followUpSuggestions.map((suggestion) => (
+                  <button
+                    type="button"
+                    className="button-ghost"
+                    key={suggestion}
+                    disabled={isGenerating}
+                    onClick={() => startBuild(`${latestRequest ?? copy.defaultPrompt}\n${suggestion}`)}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button className="button-ghost" onClick={fixCurrentRun} disabled={!activeRun || isGenerating}>
+              {copy.fixBug}
+            </button>
+          </section>
+          {error ? (
+            <p className="publish-note" style={{ color: "var(--warning)" }}>
+              {error}
+            </p>
+          ) : null}
+        </section>
+        <section className="output-panel" ref={resultRef}>
           <div>
-            <p className="section-title">{copy.generatedWorkspace}</p>
+            <p className="section-title">{copy.rightWorkspaceTitle}</p>
             <p>{resultDescription}</p>
           </div>
-          <div className="preview-tabs" aria-label={copy.previewViews}>
-            <button className="button-ghost" data-active={view === "desktop"} onClick={() => setView("desktop")}>
-              {copy.desktop}
-            </button>
-            <button className="button-ghost" data-active={view === "mobile"} onClick={() => setView("mobile")}>
-              {copy.mobile}
-            </button>
-            <button className="button-ghost" data-active={view === "code"} onClick={() => setView("code")}>
-              {copy.code}
-            </button>
+          <div className="workspace-tabs" aria-label={copy.previewViews}>
+            {copy.workspaceTabs.map((tab) => (
+              <button
+                className="button-ghost"
+                data-active={view === tab.id}
+                key={tab.id}
+                onClick={() => setView(tab.id as WorkspaceView)}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-        </div>
-        {view === "code" && activeVersion ? (
-          <CodePanel version={activeVersion} />
-        ) : (
-          <PreviewFrame
-            document={generatedDocument}
-            mode={view}
-            empty={!activeVersion}
-            copy={copy}
-            version={activeVersion}
-            progress={
-              activeProgressStep
-                ? {
-                    percent: progressPercent,
-                    state: progressState,
-                    step: activeProgressStep
-                  }
-                : null
-            }
-          />
-        )}
-      </section>
-      <aside className="panel right-panel side-panel">
-        <AgentPipeline
-          steps={activeRun?.steps ?? []}
-          progressSteps={progressSteps}
-          isGenerating={isGenerating}
-          copy={copy}
-        />
-        <div className="action-row">
-          <button className="button-ghost" onClick={fixCurrentRun} disabled={!activeRun || isGenerating}>
-            {copy.fixBug}
-          </button>
-          <button className="button-primary" onClick={publishCurrentVersion} disabled={!activeVersion}>
-            {copy.publish}
-          </button>
-        </div>
-        {publishUrl ? (
-          <p className="publish-note">
-            {copy.publishedAt} {publishUrl}
-          </p>
-        ) : null}
-        {error ? (
-          <p className="publish-note" style={{ color: "var(--warning)" }}>
-            {error}
-          </p>
-        ) : null}
-      </aside>
+          <div className="output-panel-body">
+            {view === "code" ? (
+              activeVersion ? (
+                <CodePanel version={activeVersion} />
+              ) : (
+                <section className="output-empty">
+                  <strong>{copy.code}</strong>
+                  <p>{copy.generatedResultEmpty}</p>
+                </section>
+              )
+            ) : null}
+            {view === "diff" ? <DiffPanel version={activeVersion} copy={copy} /> : null}
+            {view === "deploy" ? (
+              <DeployPanel
+                canPublish={Boolean(activeVersion)}
+                publishUrl={publishUrl}
+                onPublish={publishCurrentVersion}
+                copy={copy}
+              />
+            ) : null}
+            {view === "preview" || view === "mobile" ? (
+              <PreviewFrame
+                document={generatedDocument}
+                mode={view}
+                empty={!activeVersion}
+                copy={copy}
+                version={activeVersion}
+                progress={
+                  activeProgressStep
+                    ? {
+                        percent: progressPercent,
+                        state: progressState,
+                        step: activeProgressStep
+                      }
+                    : null
+                }
+              />
+            ) : null}
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

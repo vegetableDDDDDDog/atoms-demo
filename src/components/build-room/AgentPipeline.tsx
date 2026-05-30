@@ -24,13 +24,13 @@ export function AgentPipeline({
   const shouldShowProgress = progressSteps.length > 0;
 
   return (
-    <section>
-      <p className="section-title">{copy.agentPipeline}</p>
+    <section className="card conversation-card agent-conversation">
+      <p className="section-title">{copy.agentPlanLabel}</p>
       <div className="pipeline">
-        {isGenerating && !shouldShowProgress ? <div className="card agent-step">{copy.agentsBuilding}</div> : null}
+        {isGenerating && !shouldShowProgress ? <div className="agent-step">{copy.agentsBuilding}</div> : null}
         {shouldShowProgress
           ? progressSteps.map((step) => (
-              <article key={`${step.agent}-${step.title}`} className="card agent-step" data-status={step.status}>
+              <article key={`${step.agent}-${step.title}`} className="agent-step" data-status={step.status}>
                 <div className="agent-step-header">
                   <strong>
                     {step.agent}: {step.title}
@@ -45,7 +45,7 @@ export function AgentPipeline({
           <p style={{ color: "var(--muted)", margin: 0 }}>{copy.agentEmpty}</p>
         ) : null}
         {!shouldShowProgress ? steps.map((step) => (
-          <article key={step.id} className="card agent-step">
+          <article key={step.id} className="agent-step">
             <strong>
               {step.agent}: {step.title}
             </strong>
