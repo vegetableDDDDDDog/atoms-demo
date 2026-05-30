@@ -41,6 +41,49 @@ describe("analyzeUserQuery", () => {
     ]);
   });
 
+  it("derives concrete game planning from game requests", () => {
+    const result = analyzeUserQuery("帮我写一个魂斗罗的游戏");
+
+    expect(result.intent).toBe("build");
+    expect(result.sections.find((section) => section.title === "功能拆解")?.items).toEqual([
+      "横版移动",
+      "跳跃与射击",
+      "敌人生成",
+      "生命值与得分"
+    ]);
+    expect(result.sections.find((section) => section.title === "页面结构")?.items).toEqual([
+      "游戏舞台",
+      "状态栏",
+      "控制说明",
+      "重新开始入口"
+    ]);
+    expect(result.sections.find((section) => section.title === "数据结构")?.items).toEqual([
+      "玩家状态",
+      "子弹状态",
+      "敌人状态",
+      "得分与生命值"
+    ]);
+    expect(result.sections.find((section) => section.title === "任务步骤")?.items).toContain("实现游戏循环");
+  });
+
+  it("derives content-page planning from website and page requests", () => {
+    const result = analyzeUserQuery("帮我做一个产品官网页面，需要产品介绍、价格、联系入口");
+
+    expect(result.intent).toBe("build");
+    expect(result.sections.find((section) => section.title === "功能拆解")?.items).toEqual([
+      "产品介绍",
+      "价格",
+      "联系入口"
+    ]);
+    expect(result.sections.find((section) => section.title === "页面结构")?.items).toEqual([
+      "首屏展示",
+      "内容分区",
+      "行动按钮",
+      "联系入口"
+    ]);
+    expect(result.sections.find((section) => section.title === "任务步骤")?.items).toContain("生成内容区块");
+  });
+
   it("includes uploaded attachment names as context", () => {
     const result = analyzeUserQuery("根据附件帮我实现这个页面", ["需求说明.md", "首页截图.png"]);
 

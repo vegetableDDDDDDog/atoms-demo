@@ -8,8 +8,8 @@ import { loadSessions, saveSessions, type AppMessage, type AppSession, type Work
 import { GenerationWorkspace } from "./GenerationWorkspace";
 
 const localStorageResetKey = "atoms-demo-clean-reset-token";
-const localStorageResetValue = "2026-05-30-core-loop-clean";
-const legacySessionKeys = ["atoms-demo-sessions-v1", "atoms-demo-sessions-v2", "atoms-demo-sessions-v3"];
+const localStorageResetValue = "2026-05-30-game-generation";
+const legacySessionKeys = ["atoms-demo-sessions-v1", "atoms-demo-sessions-v2", "atoms-demo-sessions-v3", "atoms-demo-sessions-v4"];
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;

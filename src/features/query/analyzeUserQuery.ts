@@ -13,6 +13,8 @@ export type QueryAnalysis = {
 
 const consultWords = ["分析", "解释", "建议", "怎么", "如何", "方案", "区别", "review", "explain", "analyze", "suggest"];
 const reviseWords = ["修改", "修复", "增加", "删除", "改成", "调整", "优化", "change", "update", "revise", "remove", "add"];
+const gameWords = ["游戏", "game", "魂斗罗", "射击", "跳跃", "关卡", "敌人", "玩家"];
+const contentWords = ["官网", "网站", "落地页", "介绍页", "页面", "landing", "website", "homepage"];
 
 function includesAny(value: string, words: string[]) {
   const normalized = value.toLowerCase();
@@ -41,10 +43,20 @@ function hasRevisionIntent(query: string) {
   return includesAny(query, reviseWords);
 }
 
+function isGameRequest(query: string, subject: string) {
+  return includesAny(`${query} ${subject}`, gameWords);
+}
+
+function isContentPageRequest(query: string, subject: string) {
+  return !isGameRequest(query, subject) && includesAny(`${query} ${subject}`, contentWords);
+}
+
 function extractFeatures(query: string) {
   const cleaned = query.replace(/\s+/g, " ").trim();
   const marker = cleaned.match(/(?:需要|支持|包含|包括)(.+)$/);
-  const source = marker?.[1] ?? cleaned;
+  if (!marker) return [];
+
+  const source = marker[1];
   return source
     .split(/[、,，和及]/)
     .map((part) => part.replace(/[。.!！?？]/g, "").trim())
@@ -52,7 +64,27 @@ function extractFeatures(query: string) {
     .slice(0, 6);
 }
 
-function buildPages(subject: string, features: string[]) {
+function inferGameFeatures(query: string) {
+  if (includesAny(query, ["魂斗罗", "射击", "敌人", "子弹", "横版"])) {
+    return ["横版移动", "跳跃与射击", "敌人生成", "生命值与得分"];
+  }
+
+  return ["玩家控制", "目标收集", "障碍挑战", "得分与重开"];
+}
+
+function inferContentFeatures() {
+  return ["核心卖点", "内容展示", "行动按钮", "联系入口"];
+}
+
+function buildPages(subject: string, features: string[], mode: "workflow" | "game" | "content") {
+  if (mode === "content") {
+    return ["首屏展示", "内容分区", "行动按钮", "联系入口"];
+  }
+
+  if (mode === "game") {
+    return ["游戏舞台", "状态栏", "控制说明", "重新开始入口"];
+  }
+
   const pages = [`${subject}首页`];
   if (features.length > 0) {
     pages.push(`${features[0]}管理页`);
@@ -63,17 +95,39 @@ function buildPages(subject: string, features: string[]) {
   return [...new Set(pages)];
 }
 
-function buildDataObjects(subject: string, features: string[]) {
+function buildDataObjects(subject: string, features: string[], mode: "workflow" | "game" | "content") {
+  if (mode === "content") {
+    return ["页面内容", "内容区块", "行动按钮", "联系信息"];
+  }
+
+  if (mode === "game") {
+    return ["玩家状态", "子弹状态", "敌人状态", "得分与生命值"];
+  }
+
   const core = subject.replace(/系统|应用|页面|工具|平台|网站|小程序|游戏/g, "") || "业务";
   return [`${core}记录`, ...features.map((feature) => `${feature}状态`)].slice(0, 5);
 }
 
+function buildTaskSteps(mode: "workflow" | "game" | "content") {
+  if (mode === "content") {
+    return ["设计信息层级", "生成内容区块", "配置行动按钮", "完成响应式页面"];
+  }
+
+  if (mode === "game") {
+    return ["创建游戏舞台", "实现玩家控制", "实现游戏循环", "加入碰撞检测", "渲染得分与生命值"];
+  }
+
+  return ["创建页面骨架", "实现表单和列表", "接入本地状态", "生成预览检查"];
+}
+
 export function analyzeUserQuery(query: string, attachmentNames: string[] = []): QueryAnalysis {
   const trimmed = query.trim();
-  const hasConsultIntent = includesAny(trimmed, consultWords);
   const isRevision = hasRevisionIntent(trimmed);
   const isBuild = hasExplicitBuildIntent(trimmed);
   const subject = extractSubject(trimmed);
+  const isGame = isGameRequest(trimmed, subject);
+  const isContent = isContentPageRequest(trimmed, subject);
+  const mode = isGame ? "game" : isContent ? "content" : "workflow";
   const attachmentContext =
     attachmentNames.length > 0 ? `附件上下文：${attachmentNames.join("、")}` : "无附件";
 
@@ -107,7 +161,14 @@ export function analyzeUserQuery(query: string, attachmentNames: string[] = []):
   }
 
   const features = extractFeatures(trimmed);
-  const normalizedFeatures = features.length > 0 ? features : ["核心信息录入", "列表查看", "状态流转", "结果确认"];
+  const normalizedFeatures =
+    features.length > 0
+      ? features
+      : mode === "game"
+        ? inferGameFeatures(trimmed)
+        : mode === "content"
+          ? inferContentFeatures()
+          : ["核心信息录入", "列表查看", "状态流转", "结果确认"];
 
   return {
     intent: "build",
@@ -117,9 +178,9 @@ export function analyzeUserQuery(query: string, attachmentNames: string[] = []):
     sections: [
       { title: "需求理解", items: [`目标应用：${subject}`, `核心上下文：${attachmentContext}`] },
       { title: "功能拆解", items: normalizedFeatures },
-      { title: "页面结构", items: buildPages(subject, normalizedFeatures) },
-      { title: "数据结构", items: buildDataObjects(subject, normalizedFeatures) },
-      { title: "任务步骤", items: ["创建页面骨架", "实现表单和列表", "接入本地状态", "生成预览检查"] },
+      { title: "页面结构", items: buildPages(subject, normalizedFeatures, mode) },
+      { title: "数据结构", items: buildDataObjects(subject, normalizedFeatures, mode) },
+      { title: "任务步骤", items: buildTaskSteps(mode) },
       { title: "预期文件", items: ["index.html", "styles.css", "app.js"] }
     ]
   };

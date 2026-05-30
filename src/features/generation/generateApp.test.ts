@@ -32,6 +32,33 @@ describe("generateApp", () => {
     expect(firstApp.previewHtml).not.toBe(secondApp.previewHtml);
   });
 
+  it("generates a playable game surface for game requests", () => {
+    const prompt = "帮我写一个魂斗罗的游戏";
+    const app = generateApp({ prompt, analysis: analyzeUserQuery(prompt) });
+
+    expect(app.title).toBe("魂斗罗的游戏");
+    expect(app.modules.map((module) => module.title)).toEqual(["横版移动", "跳跃与射击", "敌人生成", "生命值与得分"]);
+    expect(app.previewHtml).toContain("game-canvas");
+    expect(app.previewHtml).toContain("requestAnimationFrame");
+    expect(app.previewHtml).toContain("bullets");
+    expect(app.previewHtml).toContain("enemies");
+    expect(app.previewHtml).toContain("得分");
+    expect(app.previewHtml).not.toContain("新增记录");
+  });
+
+  it("generates a content page instead of a record form for website requests", () => {
+    const prompt = "帮我做一个产品官网页面，需要产品介绍、价格、联系入口";
+    const app = generateApp({ prompt, analysis: analyzeUserQuery(prompt) });
+
+    expect(app.title).toBe("产品官网页面");
+    expect(app.modules.map((module) => module.title)).toEqual(["产品介绍", "价格", "联系入口"]);
+    expect(app.previewHtml).toContain("site-app");
+    expect(app.previewHtml).toContain("查看方案");
+    expect(app.previewHtml).toContain("联系入口");
+    expect(app.previewHtml).not.toContain("新增记录");
+    expect(app.previewHtml).not.toContain("game-canvas");
+  });
+
   it("reports missing entry file and empty preview issues", () => {
     const prompt = "帮我做一个校园社团活动报名系统，需要活动发布、学生报名";
     const app = generateApp({ prompt, analysis: analyzeUserQuery(prompt) });
