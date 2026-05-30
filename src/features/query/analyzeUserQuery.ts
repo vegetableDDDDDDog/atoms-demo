@@ -39,8 +39,17 @@ function hasExplicitBuildIntent(query: string) {
   );
 }
 
+function hasCreationIntent(query: string) {
+  return (
+    /(?:帮我|请)?(?:做|写|实现|生成|开发|搭建|创建|构建)(?:一个|个|套|款)?[^？?。]*(?:系统|应用|页面|工具|平台|网站|小程序|游戏|功能|代码)/.test(
+      query
+    ) ||
+    /\b(build|create|implement|generate)\b/i.test(query)
+  );
+}
+
 function hasRevisionIntent(query: string) {
-  return includesAny(query, reviseWords);
+  return !hasCreationIntent(query) && includesAny(query, reviseWords);
 }
 
 function isGameRequest(query: string, subject: string) {
@@ -56,12 +65,12 @@ function extractFeatures(query: string) {
   const marker = cleaned.match(/(?:需要|支持|包含|包括)(.+)$/);
   if (!marker) return [];
 
-  const source = marker[1];
+  const source = marker[1].replace(/^的?功能(有|包括|包含)?/, "");
   return source
     .split(/[、,，和及]/)
     .map((part) => part.replace(/[。.!！?？]/g, "").trim())
     .filter((part) => part.length >= 2)
-    .slice(0, 6);
+    .slice(0, 12);
 }
 
 function inferGameFeatures(query: string) {
@@ -76,6 +85,11 @@ function inferContentFeatures() {
   return ["核心卖点", "内容展示", "行动按钮", "联系入口"];
 }
 
+function hasLifecycleFeatures(features: string[]) {
+  const lifecycleCount = features.filter((feature) => /提交|评审|排期|设计|开发|测试|关闭|审批|完成/.test(feature)).length;
+  return lifecycleCount >= 2;
+}
+
 function buildPages(subject: string, features: string[], mode: "workflow" | "game" | "content") {
   if (mode === "content") {
     return ["首屏展示", "内容分区", "行动按钮", "联系入口"];
@@ -83,6 +97,10 @@ function buildPages(subject: string, features: string[], mode: "workflow" | "gam
 
   if (mode === "game") {
     return ["游戏舞台", "状态栏", "控制说明", "重新开始入口"];
+  }
+
+  if (hasLifecycleFeatures(features)) {
+    return ["工作台总览", "创建与编辑表单", "流程看板", "详情与操作记录"];
   }
 
   const pages = [`${subject}首页`];
@@ -104,17 +122,26 @@ function buildDataObjects(subject: string, features: string[], mode: "workflow" 
     return ["玩家状态", "子弹状态", "敌人状态", "得分与生命值"];
   }
 
+  if (hasLifecycleFeatures(features)) {
+    const core = subject.replace(/系统|应用|页面|工具|平台|网站|小程序|游戏/g, "") || "业务";
+    return [`${core}记录`, "当前状态", "负责人", "操作时间线"];
+  }
+
   const core = subject.replace(/系统|应用|页面|工具|平台|网站|小程序|游戏/g, "") || "业务";
   return [`${core}记录`, ...features.map((feature) => `${feature}状态`)].slice(0, 5);
 }
 
-function buildTaskSteps(mode: "workflow" | "game" | "content") {
+function buildTaskSteps(mode: "workflow" | "game" | "content", features: string[]) {
   if (mode === "content") {
     return ["设计信息层级", "生成内容区块", "配置行动按钮", "完成响应式页面"];
   }
 
   if (mode === "game") {
     return ["创建游戏舞台", "实现玩家控制", "实现游戏循环", "加入碰撞检测", "渲染得分与生命值"];
+  }
+
+  if (hasLifecycleFeatures(features)) {
+    return ["创建工作台布局", "根据功能拆解生成流程状态", "实现创建与编辑", "实现状态流转操作", "生成操作记录"];
   }
 
   return ["创建页面骨架", "实现表单和列表", "接入本地状态", "生成预览检查"];
@@ -180,7 +207,7 @@ export function analyzeUserQuery(query: string, attachmentNames: string[] = []):
       { title: "功能拆解", items: normalizedFeatures },
       { title: "页面结构", items: buildPages(subject, normalizedFeatures, mode) },
       { title: "数据结构", items: buildDataObjects(subject, normalizedFeatures, mode) },
-      { title: "任务步骤", items: buildTaskSteps(mode) },
+      { title: "任务步骤", items: buildTaskSteps(mode, normalizedFeatures) },
       { title: "预期文件", items: ["index.html", "styles.css", "app.js"] }
     ]
   };

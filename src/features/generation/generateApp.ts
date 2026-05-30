@@ -59,6 +59,17 @@ function isContentApp(title: string, modules: GeneratedModule[]) {
   return !isGameApp(title, modules) && /官网|网站|页面|落地页|首屏|内容展示|行动按钮|联系入口|website|landing/i.test(source);
 }
 
+function isLifecycleApp(title: string, modules: GeneratedModule[]) {
+  const source = `${title} ${modules.map((module) => module.title).join(" ")}`;
+  return /提交|评审|排期|设计|开发|测试|关闭|审批|流转|状态/.test(source);
+}
+
+function entityNameFromTitle(title: string) {
+  const compact = title.replace(/管理系统|系统|应用|工具|平台|页面|网站|小程序|游戏/g, "").trim();
+  if (compact.includes("需求")) return "需求";
+  return compact || "记录";
+}
+
 function buildIndexHtml(title: string, modules: GeneratedModule[], fields: string[]) {
   const moduleCards = modules
     .map(
@@ -833,13 +844,352 @@ contactForm.addEventListener("submit", (event) => {
 });`;
 }
 
+function buildLifecycleIndexHtml(title: string, modules: GeneratedModule[]) {
+  const entityName = entityNameFromTitle(title);
+  const moduleCards = modules
+    .map(
+      (module) => `
+        <article class="module-card">
+          <h2>${escapeHtml(module.title)}</h2>
+          <p>${escapeHtml(module.description)}</p>
+        </article>`
+    )
+    .join("");
+  const stages = lifecycleStagesFromModules(modules);
+  const stageColumns = stages
+    .map(
+      (stage) => `
+        <section class="stage-column" data-stage="${escapeHtml(stage)}">
+          <h2>${escapeHtml(stage)}</h2>
+          <div class="stage-items" data-list="${escapeHtml(stage)}"></div>
+        </section>`
+    )
+    .join("");
+
+  return `<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(title)}</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="workflow-app">
+      <section class="workflow-hero">
+        <p>AI 生成流程应用</p>
+        <h1>${escapeHtml(title)}</h1>
+        <span>根据 query 生成创建、编辑、状态流转和操作记录。</span>
+      </section>
+
+      <section class="workflow-layout">
+        <form id="record-form" class="record-form">
+          <h2>创建${escapeHtml(entityName)}</h2>
+          <input name="title" placeholder="${escapeHtml(entityName)}标题" required />
+          <textarea name="description" placeholder="${escapeHtml(entityName)}描述"></textarea>
+          <select name="owner">
+            <option>产品负责人</option>
+            <option>设计负责人</option>
+            <option>开发负责人</option>
+            <option>测试负责人</option>
+          </select>
+          <button type="submit">创建${escapeHtml(entityName)}</button>
+        </form>
+
+        <section class="workflow-board" aria-label="流程看板">
+          ${stageColumns}
+        </section>
+      </section>
+
+      <section class="activity-panel">
+        <h2>操作记录</h2>
+        <ol id="activity-log"></ol>
+      </section>
+
+      <section class="modules">
+        ${moduleCards}
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>`;
+}
+
+function buildLifecycleStylesCss() {
+  return `:root {
+  color-scheme: light;
+  --bg: #f3f5f7;
+  --ink: #172033;
+  --muted: #667085;
+  --panel: #ffffff;
+  --line: #d6dde8;
+  --accent: #2563eb;
+  --soft: #e8eefc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.workflow-app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.workflow-hero,
+.record-form,
+.stage-column,
+.activity-panel,
+.module-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.workflow-hero {
+  padding: 18px;
+}
+
+.workflow-hero p,
+.workflow-hero span,
+.module-card p,
+.record-card p,
+.activity-panel li {
+  margin: 0;
+  color: var(--muted);
+}
+
+.workflow-hero h1,
+.record-form h2,
+.stage-column h2,
+.activity-panel h2,
+.module-card h2 {
+  margin: 0;
+}
+
+.workflow-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.record-form {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 16px;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ink);
+  background: #fff;
+}
+
+textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 800;
+  padding: 0 12px;
+}
+
+.workflow-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.stage-column {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 280px;
+  padding: 12px;
+}
+
+.stage-column h2 {
+  font-size: 16px;
+}
+
+.stage-items {
+  display: grid;
+  gap: 8px;
+}
+
+.record-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.card-actions button {
+  min-height: 30px;
+  font-size: 12px;
+}
+
+.activity-panel,
+.module-card {
+  padding: 14px;
+}
+
+#activity-log {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-left: 18px;
+}
+
+.modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 860px) {
+  .workflow-layout {
+    grid-template-columns: 1fr;
+  }
+}`;
+}
+
+function lifecycleStagesFromModules(modules: GeneratedModule[]) {
+  const stageWords = ["提交", "评审", "排期", "设计", "开发", "测试", "关闭", "审批", "发布", "完成"];
+  const stages = modules
+    .map((module) => module.title.replace(/^需求/, ""))
+    .filter((title) => stageWords.some((word) => title.includes(word)));
+
+  return stages.length > 0 ? stages : ["待处理", "处理中", "已完成"];
+}
+
+function buildLifecycleAppJs(modules: GeneratedModule[], title: string) {
+  const stages = lifecycleStagesFromModules(modules);
+  const firstStage = stages[0];
+  const entityName = entityNameFromTitle(title);
+
+  return `const form = document.querySelector("#record-form");
+const activityLog = document.querySelector("#activity-log");
+const stages = ${JSON.stringify(stages)};
+let records = [
+  { id: 1, title: "${entityName}样例", description: "这是一条由 query 生成的初始记录。", owner: "产品负责人", stage: "${firstStage}" }
+];
+
+function addLog(text) {
+  const item = document.createElement("li");
+  item.textContent = new Date().toLocaleTimeString() + " " + text;
+  activityLog.prepend(item);
+}
+
+function moveRecord(id, nextStage) {
+  records = records.map((record) => (record.id === id ? { ...record, stage: nextStage } : record));
+  addLog("记录进入：" + nextStage);
+  render();
+}
+
+function editRecord(id) {
+  records = records.map((record) => (record.id === id ? { ...record, title: record.title + "（已编辑）" } : record));
+  addLog("编辑记录：" + id);
+  render();
+}
+
+function deleteRecord(id) {
+  records = records.filter((record) => record.id !== id);
+  addLog("删除记录：" + id);
+  render();
+}
+
+function renderCard(record) {
+  const currentIndex = stages.indexOf(record.stage);
+  const nextStage = stages[Math.min(currentIndex + 1, stages.length - 1)];
+  const canMove = nextStage !== record.stage;
+
+  return \`<article class="record-card">
+    <strong>\${record.title}</strong>
+    <p>\${record.description || "暂无描述"}</p>
+    <small>负责人：\${record.owner}</small>
+    <div class="card-actions">
+      <button type="button" data-action="edit" data-id="\${record.id}">编辑</button>
+      \${canMove ? \`<button type="button" data-action="move" data-id="\${record.id}" data-next="\${nextStage}">\${nextStage}</button>\` : ""}
+      <button type="button" data-action="delete" data-id="\${record.id}">删除</button>
+    </div>
+  </article>\`;
+}
+
+function render() {
+  for (const stage of stages) {
+    const list = document.querySelector(\`[data-list="\${stage}"]\`);
+    list.innerHTML = records.filter((record) => record.stage === stage).map(renderCard).join("");
+  }
+}
+
+document.querySelector(".workflow-board").addEventListener("click", (event) => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  const id = Number(button.dataset.id);
+  if (button.dataset.action === "move") moveRecord(id, button.dataset.next);
+  if (button.dataset.action === "edit") editRecord(id);
+  if (button.dataset.action === "delete") deleteRecord(id);
+});
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(form);
+  const record = {
+    id: Date.now(),
+    title: data.get("title"),
+    description: data.get("description"),
+    owner: data.get("owner"),
+    stage: stages[0]
+  };
+  records = [record, ...records];
+  addLog("创建${entityName}：" + record.title);
+  form.reset();
+  render();
+});
+
+addLog("工作流已根据 query 初始化");
+render();`;
+}
+
 function composePreviewHtml(indexHtml: string, stylesCss: string, appJs: string) {
   return indexHtml
     .replace('<link rel="stylesheet" href="./styles.css" />', `<style>${stylesCss}</style>`)
     .replace('<script src="./app.js"></script>', `<script>${appJs}</script>`);
 }
 
-function buildLogs(title: string, modules: GeneratedModule[], kind: "app" | "game" | "content"): RunLogEntry[] {
+function buildLogs(title: string, modules: GeneratedModule[], kind: "app" | "game" | "content" | "workflow"): RunLogEntry[] {
   return [
     { id: "intent", label: "意图识别", status: "done", detail: "识别为实现类需求，进入生成流程。" },
     {
@@ -851,6 +1201,8 @@ function buildLogs(title: string, modules: GeneratedModule[], kind: "app" | "gam
           ? `提取游戏主题“${title}”，生成玩家控制、射击、敌人和得分生命值玩法。`
           : kind === "content"
             ? `提取页面主题“${title}”，生成首屏、内容分区、行动按钮和联系入口。`
+            : kind === "workflow"
+              ? `提取流程主题“${title}”，生成创建、编辑、状态流转和操作记录。`
           : `提取应用主题“${title}”和 ${modules.length} 个功能模块。`
     },
     { id: "code", label: "代码生成", status: "done", detail: "生成 index.html、styles.css、app.js。" },
@@ -861,11 +1213,18 @@ function buildLogs(title: string, modules: GeneratedModule[], kind: "app" | "gam
 function buildGeneratedFiles(title: string, modules: GeneratedModule[], fields: string[]) {
   const isGame = isGameApp(title, modules);
   const isContent = isContentApp(title, modules);
-  const kind: "app" | "game" | "content" = isGame ? "game" : isContent ? "content" : "app";
+  const isLifecycle = isLifecycleApp(title, modules);
+  const kind: "app" | "game" | "content" | "workflow" = isGame ? "game" : isContent ? "content" : isLifecycle ? "workflow" : "app";
   const indexHtml =
-    kind === "game" ? buildGameIndexHtml(title, modules) : kind === "content" ? buildContentIndexHtml(title, modules) : buildIndexHtml(title, modules, fields);
-  const stylesCss = kind === "game" ? buildGameStylesCss() : kind === "content" ? buildContentStylesCss() : buildStylesCss();
-  const appJs = kind === "game" ? buildGameAppJs() : kind === "content" ? buildContentAppJs() : buildAppJs(fields);
+    kind === "game"
+      ? buildGameIndexHtml(title, modules)
+      : kind === "content"
+        ? buildContentIndexHtml(title, modules)
+        : kind === "workflow"
+          ? buildLifecycleIndexHtml(title, modules)
+          : buildIndexHtml(title, modules, fields);
+  const stylesCss = kind === "game" ? buildGameStylesCss() : kind === "content" ? buildContentStylesCss() : kind === "workflow" ? buildLifecycleStylesCss() : buildStylesCss();
+  const appJs = kind === "game" ? buildGameAppJs() : kind === "content" ? buildContentAppJs() : kind === "workflow" ? buildLifecycleAppJs(modules, title) : buildAppJs(fields);
   const files: GeneratedFile[] = [
     { path: "index.html", language: "html", content: indexHtml },
     { path: "styles.css", language: "css", content: stylesCss },

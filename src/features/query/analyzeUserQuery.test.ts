@@ -84,6 +84,32 @@ describe("analyzeUserQuery", () => {
     expect(result.sections.find((section) => section.title === "任务步骤")?.items).toContain("生成内容区块");
   });
 
+  it("keeps full lifecycle features for workflow system requests", () => {
+    const result = analyzeUserQuery("帮我写一个需求管理系统，包含的功能有需求创建、编辑、修改，提交、评审、排期、设计、开发、测试、关闭");
+
+    expect(result.intent).toBe("build");
+    expect(result.summary).toContain("需求管理系统");
+    expect(result.sections.find((section) => section.title === "功能拆解")?.items).toEqual([
+      "需求创建",
+      "编辑",
+      "修改",
+      "提交",
+      "评审",
+      "排期",
+      "设计",
+      "开发",
+      "测试",
+      "关闭"
+    ]);
+    expect(result.sections.find((section) => section.title === "页面结构")?.items).toEqual([
+      "工作台总览",
+      "创建与编辑表单",
+      "流程看板",
+      "详情与操作记录"
+    ]);
+    expect(result.sections.find((section) => section.title === "任务步骤")?.items).toContain("根据功能拆解生成流程状态");
+  });
+
   it("includes uploaded attachment names as context", () => {
     const result = analyzeUserQuery("根据附件帮我实现这个页面", ["需求说明.md", "首页截图.png"]);
 

@@ -1,7 +1,7 @@
 import type { GeneratedApp } from "@/features/generation/types";
 import type { QueryAnalysis } from "@/features/query/analyzeUserQuery";
 
-export const sessionStorageKey = "atoms-demo-sessions-v5";
+export const sessionStorageKey = "atoms-demo-sessions-v6";
 
 export type WorkspaceTab = "preview" | "code" | "logs";
 

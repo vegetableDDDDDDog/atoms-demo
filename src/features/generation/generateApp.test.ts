@@ -59,6 +59,33 @@ describe("generateApp", () => {
     expect(app.previewHtml).not.toContain("game-canvas");
   });
 
+  it("generates a workflow board with lifecycle actions from workflow requests", () => {
+    const prompt = "帮我写一个需求管理系统，包含的功能有需求创建、编辑、修改，提交、评审、排期、设计、开发、测试、关闭";
+    const app = generateApp({ prompt, analysis: analyzeUserQuery(prompt) });
+
+    expect(app.title).toBe("需求管理系统");
+    expect(app.modules.map((module) => module.title)).toEqual([
+      "需求创建",
+      "编辑",
+      "修改",
+      "提交",
+      "评审",
+      "排期",
+      "设计",
+      "开发",
+      "测试",
+      "关闭"
+    ]);
+    expect(app.previewHtml).toContain("workflow-app");
+    expect(app.previewHtml).toContain("workflow-board");
+    expect(app.previewHtml).toContain("创建需求");
+    expect(app.previewHtml).toContain("提交");
+    expect(app.previewHtml).toContain("评审");
+    expect(app.previewHtml).toContain("关闭");
+    expect(app.previewHtml).toContain("moveRecord");
+    expect(app.previewHtml).not.toContain("game-canvas");
+  });
+
   it("reports missing entry file and empty preview issues", () => {
     const prompt = "帮我做一个校园社团活动报名系统，需要活动发布、学生报名";
     const app = generateApp({ prompt, analysis: analyzeUserQuery(prompt) });
