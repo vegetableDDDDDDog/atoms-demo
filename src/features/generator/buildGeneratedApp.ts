@@ -7,6 +7,7 @@ export function buildGeneratedApp(input: GenerateAppInput): GeneratedAppFiles {
   return createTemplate({
     prompt: input.prompt,
     appType,
+    locale: input.locale,
     fixRequested: input.fixRequested
   });
 }

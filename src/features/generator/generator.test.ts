@@ -14,6 +14,10 @@ describe("classifyPrompt", () => {
   it("classifies todo and operations prompts as operations", () => {
     expect(classifyPrompt("Make an internal todo operations board")).toBe("operations");
   });
+
+  it("classifies Chinese customer booking prompts as crm", () => {
+    expect(classifyPrompt("生成一个客户预约 CRM")).toBe("crm");
+  });
 });
 
 describe("buildGeneratedApp", () => {
@@ -28,5 +32,17 @@ describe("buildGeneratedApp", () => {
     expect(app.css).toContain(":root");
     expect(app.js).toContain("addEventListener");
     expect(app.appType).toBe("crm");
+  });
+
+  it("generates Chinese iframe-ready copy when locale is zh", () => {
+    const app = buildGeneratedApp({
+      prompt: "生成一个客户预约 CRM",
+      mode: "team",
+      locale: "zh"
+    });
+
+    expect(app.title).toContain("预约");
+    expect(app.html).toContain("新增记录");
+    expect(app.html).toContain("搜索生成数据");
   });
 });
